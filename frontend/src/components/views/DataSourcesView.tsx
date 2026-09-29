@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Dataset, fetchDatasetsApi } from '../../api/datasets';
+import { useT } from '../../i18n';
 
 interface DataSourcesViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
@@ -8,6 +9,7 @@ interface DataSourcesViewProps {
 const categories = ['All', 'Water', 'Road', 'Health', 'Education', 'Other'];
 
 export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast }) => {
+  const t = useT();
   const [datasets, setDatasets] = useState<Dataset[]>([]);
   const [filterCategory, setFilterCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
@@ -42,10 +44,10 @@ export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast })
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
       <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">Public data catalog</p>
-          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">Data sources</h1>
+          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">{t('Public data catalog')}</p>
+          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('Data sources')}</h1>
           <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
-            Dataset metadata currently stored by this prototype. Availability here does not imply a live upstream feed.
+            {t('Dataset metadata currently stored by this prototype. Availability here does not imply a live upstream feed.')}
           </p>
         </div>
         <button
@@ -55,7 +57,7 @@ export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast })
           className="inline-flex items-center gap-2 self-start border border-[#006a61] px-4 py-2 text-[13px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:cursor-wait disabled:opacity-50 md:self-auto"
         >
           <span className={`material-symbols-outlined text-[18px] ${isReloading ? 'animate-spin' : ''}`}>refresh</span>
-          <span>{isReloading ? 'Loading...' : 'Reload catalog'}</span>
+          <span>{isReloading ? t('Loading...') : t('Reload catalog')}</span>
         </button>
       </header>
 
@@ -68,15 +70,15 @@ export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast })
             onClick={() => setFilterCategory(category)}
             className={`border px-3 py-1.5 text-[12px] font-semibold ${filterCategory === category ? 'border-[#006a61] bg-[#e7f5f1] text-[#005049]' : 'border-[#dce9ff] text-[#45464d] hover:bg-[#eff4ff]'}`}
           >
-            {category}{category === 'All' ? ` (${datasets.length})` : ''}
+            {t(category)}{category === 'All' ? ` (${datasets.length})` : ''}
           </button>
         ))}
       </div>
 
-      {isLoading && <p className="text-[13px] text-[#45464d]">Loading stored datasets...</p>}
+      {isLoading && <p className="text-[13px] text-[#45464d]">{t('Loading stored datasets...')}</p>}
       {error && <p role="alert" className="border-l-2 border-[#ba1a1a] pl-3 text-[13px] text-[#93000a]">{error}</p>}
       {!isLoading && !error && datasets.length === 0 && (
-        <p className="border-y border-[#dce9ff] py-5 text-[13px] text-[#45464d]">No datasets are currently registered.</p>
+        <p className="border-y border-[#dce9ff] py-5 text-[13px] text-[#45464d]">{t('No datasets are currently registered.')}</p>
       )}
 
       <section className="grid grid-cols-1 gap-x-8 md:grid-cols-2" aria-label="Registered datasets">
@@ -100,8 +102,8 @@ export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast })
               <div><dt className="text-[#76777d]">Reporting period</dt><dd className="text-[#0b1c30]">{dataset.time_period || 'Not specified'}</dd></div>
             </dl>
             {dataset.source_url && (
-              <a href={dataset.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#005049] underline">
-                <span>Open source</span><span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                <a href={dataset.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#005049] underline">
+                <span>{t('Open source')}</span><span className="material-symbols-outlined text-[14px]">open_in_new</span>
               </a>
             )}
           </article>

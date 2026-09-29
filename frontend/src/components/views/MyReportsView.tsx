@@ -8,6 +8,7 @@ import {
   GroundedAnalysis,
   RequestEvidenceResponse,
 } from '../../api/requests';
+import { useT } from '../../i18n';
 
 interface MyReportsViewProps {
   reports: CitizenReport[];
@@ -24,6 +25,7 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
   onSelectReport,
   onOpenReportModal,
 }) => {
+  const t = useT();
   const [activeRequestId, setActiveRequestId] = useState<string | null>(null);
   const [requestDetails, setRequestDetails] = useState<CitizenRequestRecord | null>(null);
   const [evidenceDetails, setEvidenceDetails] = useState<RequestEvidenceResponse | null>(null);
@@ -78,10 +80,10 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
             <span>Citizen Auditable Telemetry Log</span>
           </div>
           <h1 className="text-[24px] font-bold text-[#0b1c30] tracking-tight mt-0.5">
-            Citizen Request Tracking
+            {t('Citizen Request Tracking')}
           </h1>
           <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
-            Track request processing and inspect any public evidence returned for a submitted request.
+            {t('Track request processing and inspect any public evidence returned for a submitted request.')}
           </p>
         </div>
 
@@ -98,13 +100,13 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
       <section className="space-y-3" aria-labelledby="citizen-requests-heading">
         <div className="flex items-center justify-between gap-3">
           <h2 id="citizen-requests-heading" className="text-[17px] font-semibold text-[#0b1c30]">
-            Recent citizen requests
+            {t('Recent citizen requests')}
           </h2>
           <span className="font-mono text-[11px] text-[#76777d]">{requests.length} saved</span>
         </div>
         {requests.length === 0 ? (
           <p className="border-y border-[#dce9ff] py-4 text-[13px] text-[#45464d]">
-            No requests submitted in this session.
+            {t('No requests submitted in this session.')}
           </p>
         ) : requests.map((request) => {
           const isOpen = activeRequestId === request.reference_id;
@@ -120,7 +122,7 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
                   </p>
                   <p className="text-[14px] font-medium text-[#0b1c30]">{request.citizen_request}</p>
                   <p className="text-[12px] text-[#45464d]">
-                    {request.locality ? `${request.locality}, ` : ''}{request.district}, {request.state} · {request.category}
+                    {request.locality ? `${request.locality}, ` : ''}{request.district}, {request.state} · {t(request.category)}
                   </p>
                 </div>
                 <button
@@ -129,33 +131,33 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
                   onClick={() => void openRequest(request)}
                   className="shrink-0 border border-[#9aa8b8] px-3 py-2 text-[12px] font-semibold text-[#0b1c30] hover:bg-[#eff4ff]"
                 >
-                  {isOpen ? 'Hide details' : 'Track request'}
+                  {isOpen ? t('Hide details') : t('Track request')}
                 </button>
               </div>
 
               <dl className="grid grid-cols-2 gap-3 border-t border-[#e5eeff] pt-3 sm:grid-cols-4">
-                <div><dt className="text-[10px] uppercase text-[#76777d]">Request status</dt><dd className="text-[12px] font-semibold">{request.status}</dd></div>
-                <div><dt className="text-[10px] uppercase text-[#76777d]">AI extraction</dt><dd className="text-[12px] font-semibold">{request.ai_extraction_status}</dd></div>
-                <div><dt className="text-[10px] uppercase text-[#76777d]">Retrieval</dt><dd className="text-[12px] font-semibold">{request.retrieval_status}</dd></div>
-                <div><dt className="text-[10px] uppercase text-[#76777d]">Evidence count</dt><dd className="text-[12px] font-semibold">{request.evidence_count}</dd></div>
+                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('Request status')}</dt><dd className="text-[12px] font-semibold">{t(request.status)}</dd></div>
+                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('AI extraction')}</dt><dd className="text-[12px] font-semibold">{t(request.ai_extraction_status)}</dd></div>
+                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('Retrieval')}</dt><dd className="text-[12px] font-semibold">{t(request.retrieval_status)}</dd></div>
+                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('Evidence count')}</dt><dd className="text-[12px] font-semibold">{request.evidence_count}</dd></div>
               </dl>
 
               {isOpen && (
                 <div className="space-y-4 border-t border-[#e5eeff] pt-4">
-                  {busy && <p className="text-[12px] text-[#45464d]">Loading request details...</p>}
+                  {busy && <p className="text-[12px] text-[#45464d]">{t('Loading request details...')}</p>}
                   {requestError && <p role="alert" className="text-[12px] text-[#93000a]">{requestError}</p>}
                   {requestDetails && <p className="text-[11px] text-[#76777d]">Reference confirmed: {requestDetails.reference_id}</p>}
                   <div className="space-y-3">
-                    <h3 className="text-[14px] font-semibold text-[#0b1c30]">Public Data Evidence</h3>
+                    <h3 className="text-[14px] font-semibold text-[#0b1c30]">{t('Public Data Evidence')}</h3>
                     {evidence.length === 0 ? (
                       <p className="text-[12px] text-[#45464d]">
-                        No evidence was returned by the configured retrieval system. This does not establish that the issue is absent from public data.
+                        {t('No evidence was returned by the configured retrieval system. This does not establish that the issue is absent from public data.')}
                       </p>
                     ) : evidence.map((match) => (
                       <div key={match.evidence.evidence_id} className="border-l-2 border-[#006a61] pl-3 space-y-1">
                         <h4 className="text-[13px] font-semibold text-[#0b1c30]">{match.evidence.title}</h4>
                         <p className="text-[12px] text-[#45464d]">
-                          {[match.evidence.locality, match.evidence.district, match.evidence.state].filter(Boolean).join(', ')} · {match.evidence.category}
+                          {[match.evidence.locality, match.evidence.district, match.evidence.state].filter(Boolean).join(', ')} · {t(match.evidence.category)}
                         </p>
                         <p className="text-[12px] text-[#45464d]">
                           {match.evidence.metric_name || 'Metric'}: {match.evidence.metric_value ?? 'Not provided'}{match.evidence.unit || ''} · {match.evidence.year || match.evidence.period || 'Year not provided'}
@@ -177,24 +179,24 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
                       onClick={() => void generateAnalysis(request.reference_id)}
                       className="border border-[#006a61] px-3 py-2 text-[12px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:opacity-50"
                     >
-                      {busy ? 'Generating...' : 'Generate evidence-grounded analysis'}
+                      {busy ? t('Generating...') : t('Generate evidence-grounded analysis')}
                     </button>
                   )}
 
                   {analysis && (
                     <section className="space-y-3 border-t border-[#dce9ff] pt-4" aria-label="Grounded analysis">
-                      <h3 className="text-[14px] font-semibold text-[#0b1c30]">Grounded Analysis</h3>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">Summary</h4><p className="text-[13px] text-[#0b1c30]">{analysis.summary}</p></div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">Observations</h4>
+                      <h3 className="text-[14px] font-semibold text-[#0b1c30]">{t('Grounded Analysis')}</h3>
+                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Summary')}</h4><p className="text-[13px] text-[#0b1c30]">{analysis.summary}</p></div>
+                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Observations')}</h4>
                         {analysis.observations.map((observation, index) => (
                           <p key={`${index}-${observation.statement}`} className="py-1 text-[13px] text-[#0b1c30]">
                             {observation.statement} <span className="font-mono text-[11px] text-[#006a61]">Evidence: {observation.evidence_ids.join(', ')}</span>
                           </p>
                         ))}
                       </div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">Evidence Gaps</h4><ul className="list-disc pl-5 text-[12px]">{analysis.evidence_gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul></div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">Sources</h4><ul className="list-disc pl-5 font-mono text-[12px]">{analysis.source_references.map((source) => <li key={source}>{source}</li>)}</ul></div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">Limitations</h4><ul className="list-disc pl-5 text-[12px]">{analysis.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div>
+                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Evidence Gaps')}</h4><ul className="list-disc pl-5 text-[12px]">{analysis.evidence_gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul></div>
+                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Sources')}</h4><ul className="list-disc pl-5 font-mono text-[12px]">{analysis.source_references.map((source) => <li key={source}>{source}</li>)}</ul></div>
+                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Limitations')}</h4><ul className="list-disc pl-5 text-[12px]">{analysis.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div>
                     </section>
                   )}
                 </div>

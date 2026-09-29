@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NavigationTab } from '../../types';
 import { MAP_MARKERS, ASSETS } from '../../data/mockData';
+import { LocalizedTree } from '../../i18n';
 
 interface ExploreIssuesViewProps {
   onNavigate: (tab: NavigationTab) => void;
@@ -73,6 +74,7 @@ export const ExploreIssuesView: React.FC<ExploreIssuesViewProps> = ({
   };
 
   return (
+    <LocalizedTree>
     <div className="flex flex-col w-full min-h-[calc(100vh-64px)]">
       {/* Sub-header ribbon */}
       <div className="w-full bg-[#eff4ff] py-3 px-4 lg:px-6 flex flex-wrap items-center justify-between gap-3 border-b border-[#e5eeff]">
@@ -796,5 +798,6 @@ export const ExploreIssuesView: React.FC<ExploreIssuesViewProps> = ({
         </div>
       </div>
     </div>
+    </LocalizedTree>
   );
 };

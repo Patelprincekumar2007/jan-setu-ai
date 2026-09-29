@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { NavigationTab } from '../../types';
 import { ASSETS, DEMO_PRESET_COMPLAINTS } from '../../data/mockData';
 import { CitizenRequestInput, CitizenRequestRecord } from '../../api/requests';
+import { useT } from '../../i18n';
 
 interface ReportProblemViewProps {
   onNavigate: (tab: NavigationTab) => void;
@@ -14,6 +15,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
   onSubmitRequest,
   onShowToast,
 }) => {
+  const t = useT();
   const [narrative, setNarrative] = useState<string>(
     'Our primary health centre does not have clean drinking water and the borewell is not working. Doctors and patients have had to bring bottled water from 2km away for the past 12 days.'
   );
@@ -74,11 +76,11 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
         locality: ward || city,
         affected_households: Number.parseInt(households, 10) || undefined,
       });
-      onShowToast('Request received', `Reference ID: ${created.reference_id}`, 'success');
+      onShowToast(t('Request received'), `${t('Reference ID')}: ${created.reference_id}`, 'success');
       onNavigate('my-reports');
     } catch (error) {
       onShowToast(
-        'Request could not be submitted',
+        t('Request could not be submitted'),
         error instanceof Error ? error.message : 'The request could not be saved.',
         'warning',
       );
@@ -95,24 +97,24 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
               <span className="material-symbols-outlined text-[16px]">verified</span>
-              <span>Citizen request intake</span>
+              <span>{t('Citizen request intake')}</span>
             </div>
             <h1 className="text-[24px] font-bold text-[#0b1c30] tracking-tight mt-0.5">
-              Report a Community Problem
+              {t('Report a Community Problem')}
             </h1>
             <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
-              Describe the issue and location. Extraction and public-data retrieval run after submission.
+              {t('Describe the issue and location. Extraction and public-data retrieval run after submission.')}
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto bg-[#eff4ff] px-3 py-1.5 rounded-lg border border-[#dce9ff]">
             <span className="w-2.5 h-2.5 rounded-full bg-[#006a61] animate-pulse"></span>
             <span className="font-mono text-[11px] text-[#0b1c30] font-semibold">
-              Processing status is reported after submission
+              {t('Processing status is reported after submission')}
             </span>
             <span className="font-mono text-[11px] text-[#76777d]">|</span>
             <span className="font-mono text-[11px] text-[#45464d]">
-              Decision-support prototype
+              {t('Decision-support prototype')}
             </span>
           </div>
         </div>
@@ -215,11 +217,11 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                 <span className="material-symbols-outlined text-[#006a61] text-[22px]">
                   record_voice_over
                 </span>
-                <span>Describe the problem in your words</span>
+                <span>{t('Describe the problem in your words')}</span>
               </label>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-mono text-[11px] font-semibold self-start sm:self-auto">
                 <span className="material-symbols-outlined text-[14px]">translate</span>
-                <span>Describe the issue in your own words</span>
+                <span>{t('Describe the issue in your own words')}</span>
               </span>
             </div>
 
@@ -229,7 +231,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                 neurology
               </span>
               <p className="text-[12px] leading-relaxed">
-                Include the reported problem, affected people, and location. Avoid unnecessary personal details.
+                {t('Include the reported problem, affected people, and location. Avoid unnecessary personal details.')}
               </p>
             </div>
 
@@ -238,7 +240,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
               <textarea
                 className="w-full bg-transparent text-[14px] text-[#0b1c30] placeholder:text-[#76777d] outline-none resize-none leading-relaxed"
                 id="complaintNarrative"
-                placeholder="Describe municipal, utility, health, or environmental grievance..."
+                placeholder={t('Describe municipal, utility, health, or environmental grievance...')}
                 rows={5}
                 value={narrative}
                 onChange={(e) => setNarrative(e.target.value)}
@@ -532,7 +534,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                     </span>
                     <div className="flex flex-col min-w-0">
                       <span className="text-[13px] font-semibold truncate leading-tight">
-                        {cat.label}
+                        {t(cat.label)}
                       </span>
                       {cat.subtitle && (
                         <span
@@ -570,7 +572,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                  State
+                  {t('State')}
                 </label>
                 <div className="flex items-center justify-between bg-[#eff4ff] px-3 py-2 rounded-lg border border-[#dce9ff]">
                   <span className="text-[13px] text-[#0b1c30] font-medium">{stateName}</span>
@@ -582,7 +584,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
 
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                  District
+                  {t('District')}
                 </label>
                 <div className="flex items-center justify-between bg-[#eff4ff] px-3 py-2 rounded-lg border border-[#dce9ff]">
                   <span className="text-[13px] text-[#0b1c30] font-medium">{district}</span>
@@ -594,7 +596,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
 
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                  City / Town
+                  {t('City / Town')}
                 </label>
                 <div className="flex items-center bg-[#eff4ff] px-3 py-2 rounded-lg border border-[#dce9ff]">
                   <input
@@ -608,7 +610,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
 
               <div className="space-y-1">
                 <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                  Ward / Locality
+                  {t('Ward / Locality')}
                 </label>
                 <div className="flex items-center bg-[#eff4ff] px-3 py-2 rounded-lg border border-[#dce9ff]">
                   <input
@@ -677,7 +679,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
               shield
             </span>
             <p className="text-[12px]">
-              NagrikLens AI is a decision-support prototype, not an official government portal or grievance channel.
+              {t('NagrikLens AI is a decision-support prototype, not an official government portal or grievance channel.')}
             </p>
           </div>
 
@@ -709,11 +711,11 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                   <span className="material-symbols-outlined text-[18px] animate-spin">
                     refresh
                   </span>
-                  <span>Saving request...</span>
+                  <span>{t('Saving request...')}</span>
                 </>
               ) : (
                 <>
-                  <span>Submit request</span>
+                  <span>{t('Submit request')}</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </>
               )}

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { AppLanguage, NavigationTab } from '../types';
 import { ASSETS } from '../data/mockData';
+import { useT } from '../i18n';
 
 interface HeaderProps {
   language: AppLanguage;
@@ -17,6 +18,7 @@ export const Header: React.FC<HeaderProps> = ({
   onOpenMobileMenu,
   onOpenReportModal,
 }) => {
+  const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
   const [unreadCount, setUnreadCount] = useState(2);
@@ -56,7 +58,7 @@ export const Header: React.FC<HeaderProps> = ({
           type="button"
           onClick={onOpenMobileMenu}
           className="p-1.5 rounded-lg text-[#45464d] hover:bg-[#dce9ff] lg:hidden"
-          title="Open Menu"
+          title={t('Open Menu')}
         >
           <span className="material-symbols-outlined text-[24px]">menu</span>
         </button>
@@ -68,7 +70,7 @@ export const Header: React.FC<HeaderProps> = ({
           </span>
           <input
             className="bg-transparent w-full outline-none text-[13px] text-[#0b1c30] placeholder:text-[#76777d]"
-            placeholder="Search datasets, municipal reports, or Ward GeoIDs..."
+            placeholder={t('Search datasets, municipal reports, or Ward GeoIDs...')}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -91,7 +93,7 @@ export const Header: React.FC<HeaderProps> = ({
 
         {/* Demo Mode Badge */}
         <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded bg-[#e5eeff] text-[#45464d] font-mono text-[11px] font-semibold whitespace-nowrap border border-[#dce9ff]">
-          Demo Mode
+          {t('Demo Mode')}
         </span>
       </div>
 
@@ -128,7 +130,7 @@ export const Header: React.FC<HeaderProps> = ({
               if (!showNotifications) setUnreadCount(0);
             }}
             className="relative p-1.5 rounded hover:bg-[#dce9ff] transition-colors text-[#45464d] hover:text-[#0b1c30]"
-            title="Notifications"
+            title={t('Notifications')}
           >
             <span className="material-symbols-outlined text-[22px]">notifications</span>
             {unreadCount > 0 && (
@@ -142,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({
               <div className="flex items-center justify-between pb-2 border-b border-[#eff4ff]">
                 <div className="flex items-center gap-1.5">
                   <span className="font-semibold text-[13px] text-[#0b1c30]">
-                    System Telemetry Feeds
+                    {t('System Telemetry Feeds')}
                   </span>
                   <span className="px-1.5 py-0.2 rounded bg-[#eff4ff] text-[#006a61] font-mono text-[10px] font-semibold">
                     LIVE
@@ -187,14 +189,14 @@ export const Header: React.FC<HeaderProps> = ({
                   }}
                   className="text-[#006a61] font-semibold hover:underline"
                 >
-                  System Monitoring Stream →
+                  {t('System Monitoring')} →
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowNotifications(false)}
                   className="text-[#76777d] hover:text-[#0b1c30]"
                 >
-                  Dismiss
+                  {t('Dismiss')}
                 </button>
               </div>
             </div>

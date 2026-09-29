@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { fetchHealthApi, SystemHealth } from '../../api/health';
+import { useT } from '../../i18n';
 
 const services: { key: keyof SystemHealth['services']; label: string }[] = [
   { key: 'api', label: 'API' },
@@ -15,6 +16,7 @@ interface SystemMonitoringViewProps {
 }
 
 export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onShowToast }) => {
+  const t = useT();
   const [health, setHealth] = useState<SystemHealth | null>(null);
   const [isChecking, setIsChecking] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -53,10 +55,10 @@ export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onSh
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
       <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">Backend health endpoint</p>
-          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">System monitoring</h1>
+          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">{t('Backend health endpoint')}</p>
+          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('System monitoring')}</h1>
           <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
-            Service states come from the running API. This view does not report unmeasured latency, capacity, or worker counts.
+            {t('Service states come from the running API. This view does not report unmeasured latency, capacity, or worker counts.')}
           </p>
         </div>
         <button
@@ -66,7 +68,7 @@ export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onSh
           className="inline-flex items-center gap-2 self-start border border-[#006a61] px-4 py-2 text-[13px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:cursor-wait disabled:opacity-50 md:self-auto"
         >
           <span className={`material-symbols-outlined text-[18px] ${isChecking ? 'animate-spin' : ''}`}>refresh</span>
-          <span>{isChecking ? 'Checking...' : 'Run health check'}</span>
+          <span>{isChecking ? t('Checking...') : t('Run health check')}</span>
         </button>
       </header>
 
@@ -76,9 +78,9 @@ export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onSh
         <div className="flex flex-wrap items-center gap-3 border-y border-[#dce9ff] py-4">
           <span className={`h-2.5 w-2.5 ${health?.status === 'healthy' ? 'bg-[#006a61]' : 'bg-[#ba1a1a]'}`} />
           <h2 className="text-[17px] font-semibold text-[#0b1c30]">
-            {health ? health.status : isChecking ? 'Checking services' : 'Status unavailable'}
+            {health ? t(health.status) : isChecking ? t('Checking services') : t('Status unavailable')}
           </h2>
-          {health && <span className="text-[12px] text-[#76777d]">Environment: {health.environment}</span>}
+          {health && <span className="text-[12px] text-[#76777d]">{t('Environment:')} {health.environment}</span>}
           {health && <time className="text-[12px] text-[#76777d]">{health.timestamp}</time>}
         </div>
         <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
@@ -87,8 +89,8 @@ export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onSh
             const isHealthy = value === 'ok' || value === 'ready' || value === 'available_in_memory' || value === 'configured';
             return (
               <div key={key} className="flex items-center justify-between gap-3 border-b border-[#eff4ff] py-3">
-                <span className="text-[13px] text-[#45464d]">{label}</span>
-                <span className={`font-mono text-[12px] font-semibold ${isHealthy ? 'text-[#005049]' : 'text-[#93000a]'}`}>{value}</span>
+                <span className="text-[13px] text-[#45464d]">{t(label)}</span>
+                <span className={`font-mono text-[12px] font-semibold ${isHealthy ? 'text-[#005049]' : 'text-[#93000a]'}`}>{t(value)}</span>
               </div>
             );
           })}

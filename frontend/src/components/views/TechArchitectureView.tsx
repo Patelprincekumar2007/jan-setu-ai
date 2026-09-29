@@ -1,7 +1,9 @@
 import React from 'react';
+import { LocalizedTree } from '../../i18n';
 
 export const TechArchitectureView: React.FC = () => {
   return (
+    <LocalizedTree>
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
       <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-2">
         <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
@@ -110,5 +112,6 @@ export const TechArchitectureView: React.FC = () => {
         </div>
       </div>
     </div>
+    </LocalizedTree>
   );
 };

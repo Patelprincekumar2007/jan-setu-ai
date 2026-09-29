@@ -6,6 +6,7 @@ import {
   fetchGeographicBreakdownApi,
   fetchEvidenceStatsApi,
 } from '../../api/analytics';
+import { useT } from '../../i18n';
 
 interface AnalyticsViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
@@ -18,6 +19,7 @@ type EvidenceCount = { coverage: string; count: number };
 const csvCell = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => {
+  const t = useT();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
   const [categories, setCategories] = useState<CategoryCount[]>([]);
   const [geographies, setGeographies] = useState<GeographyCount[]>([]);
@@ -86,10 +88,10 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
       <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">Stored platform data</p>
-          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">Report analytics</h1>
+          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">{t('Stored platform data')}</p>
+          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('Report analytics')}</h1>
           <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
-            Counts are calculated from reports, analyses, datasets, and evidence currently stored by this prototype.
+            {t('Counts are calculated from reports, analyses, datasets, and evidence currently stored by this prototype.')}
           </p>
         </div>
         <button
@@ -99,25 +101,25 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
           className="inline-flex items-center gap-2 self-start border border-[#006a61] px-4 py-2 text-[13px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:cursor-not-allowed disabled:opacity-50 md:self-auto"
         >
           <span className="material-symbols-outlined text-[18px]">download</span>
-          <span>Download CSV</span>
+          <span>{t('Download CSV')}</span>
         </button>
       </header>
 
-      {isLoading && <p className="text-[13px] text-[#45464d]">Loading stored analytics...</p>}
+      {isLoading && <p className="text-[13px] text-[#45464d]">{t('Loading stored analytics...')}</p>}
       {error && <p role="alert" className="border-l-2 border-[#ba1a1a] pl-3 text-[13px] text-[#93000a]">{error}</p>}
 
       {overview && (
         <>
           <section className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Report totals">
             {[
-              ['Total reports', overview.total_reports],
-              ['Active reports', overview.active_reports],
-              ['Evidence-backed', overview.evidence_backed_reports],
-              ['Evidence records', overview.total_evidences],
-              ['Resolved reports', overview.resolved_reports],
-              ['Insufficient evidence', overview.insufficient_evidence_reports],
-              ['Registered datasets', overview.total_datasets],
-              ['Analyzed reports', overview.analyzed_reports],
+              [t('Total reports'), overview.total_reports],
+              [t('Active reports'), overview.active_reports],
+              [t('Evidence-backed'), overview.evidence_backed_reports],
+              [t('Evidence records'), overview.total_evidences],
+              [t('Resolved reports'), overview.resolved_reports],
+              [t('Insufficient evidence'), overview.insufficient_evidence_reports],
+              [t('Registered datasets'), overview.total_datasets],
+              [t('Analyzed reports'), overview.analyzed_reports],
             ].map(([label, value]) => (
               <div key={label} className="border-y border-[#dce9ff] py-3">
                 <p className="text-[11px] font-semibold uppercase text-[#76777d]">{label}</p>
@@ -129,7 +131,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             <section className="space-y-4" aria-labelledby="category-breakdown">
               <div className="border-b border-[#dce9ff] pb-2">
-                <h2 id="category-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">Reports by category</h2>
+                <h2 id="category-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">{t('Reports by category')}</h2>
               </div>
               {categories.length === 0 ? <p className="text-[13px] text-[#76777d]">No report categories available.</p> : categories.map((item) => (
                 <div key={item.category} className="space-y-1">
@@ -141,7 +143,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
 
             <section className="space-y-4" aria-labelledby="geography-breakdown">
               <div className="border-b border-[#dce9ff] pb-2">
-                <h2 id="geography-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">Reports by geography</h2>
+                <h2 id="geography-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">{t('Reports by geography')}</h2>
               </div>
               {geographies.length === 0 ? <p className="text-[13px] text-[#76777d]">No report geography available.</p> : geographies.map((item) => (
                 <div key={`${item.state}-${item.district}`} className="flex justify-between border-b border-[#eff4ff] py-2 text-[13px]">

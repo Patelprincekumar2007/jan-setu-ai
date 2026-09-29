@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { CitizenReport, NavigationTab } from '../../types';
 import { PIPELINE_STEPS, PUBLIC_DATASETS, ASSETS } from '../../data/mockData';
+import { useT } from '../../i18n';
 
 interface DashboardViewProps {
   reports: CitizenReport[];
@@ -17,6 +18,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onSelectReportForInspection,
   onShowToast,
 }) => {
+  const t = useT();
   const [activeStep, setActiveStep] = useState<number>(1);
   const [isSimulating, setIsSimulating] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<'reports' | 'verified-docs' | 'map'>('reports');
@@ -59,21 +61,20 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="material-symbols-outlined text-[16px]">verified</span>
               </span>
               <span className="font-mono text-[11px] tracking-wider uppercase text-[#89f5e7] font-semibold">
-                60-90s Rapid Audit
+                {t('60-90s Rapid Audit')}
               </span>
               <span className="text-[#7c839b] font-mono text-[11px]">•</span>
               <h2 className="font-semibold text-[15px] text-[#ffffff]">
-                Judge &amp; Reviewer Fast Track Walkthrough
+                {t('Judge & Reviewer Fast Track Walkthrough')}
               </h2>
             </div>
             <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-[#d3e4fe]/15 text-[#bec6e0] border border-[#bec6e0]/20">
-              Auditable Pipeline v2.4
+              {t('Auditable Pipeline v2.4')}
             </span>
           </div>
 
           <p className="text-[13px] text-[#bec6e0] max-w-4xl leading-relaxed">
-            Follow the five procedural checkpoints transforming raw community complaints into legally auditable,
-            open-data verified municipal interventions.
+            {t('Follow the five procedural checkpoints transforming raw community complaints into legally auditable, open-data verified municipal interventions.')}
           </p>
 
           {/* Pipeline Sequence Bar with Step Triggers */}
@@ -100,7 +101,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                         isSelected ? 'text-[#89f5e7]' : 'text-[#cbdbf5]'
                       }`}
                     >
-                      STEP 0{step.stepNumber}
+                      {t('STEP')} 0{step.stepNumber}
                     </span>
                     <span
                       className={`material-symbols-outlined text-[16px] ${
@@ -111,10 +112,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     </span>
                   </div>
                   <span className="font-semibold text-[13px] text-[#ffffff] truncate">
-                    {step.title}
+                    {t(step.title)}
                   </span>
                   <span className="text-[12px] text-[#bec6e0] line-clamp-1">
-                    {step.shortDesc}
+                    {t(step.shortDesc)}
                   </span>
                 </button>
               );
@@ -128,8 +129,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {currentStepData.stateBadge}
               </span>
               <p className="text-[13px] text-[#ffffff] leading-snug">
-                <strong className="text-[#89f5e7]">Step {activeStep} Active:</strong>{' '}
-                {currentStepData.fullDesc}
+                <strong className="text-[#89f5e7]">{t('Step')} {activeStep} {t('Active:')}</strong>{' '}
+                {t(currentStepData.fullDesc)}
               </p>
             </div>
             <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
@@ -141,18 +142,18 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 <span className="material-symbols-outlined text-[16px]">
                   {isSimulating ? 'pause_circle' : 'play_circle'}
                 </span>
-                <span>{isSimulating ? 'Pause Simulation' : 'Run Live Simulation'}</span>
+                <span>{isSimulating ? t('Pause Simulation') : t('Run Live Simulation')}</span>
               </button>
               <button
                 type="button"
                 onClick={() => {
                   setIsSimulating(false);
                   setActiveStep(1);
-                  onShowToast('Tour Reset', 'Walkthrough reset to Step 1 (Citizen Grievance Ingest)');
+                  onShowToast(t('Tour Reset'), t('Walkthrough reset to Step 1 (Citizen Grievance Ingest)'));
                 }}
                 className="px-2.5 py-1.5 rounded bg-[#d3e4fe]/20 text-[#ffffff] font-medium text-[12px] hover:bg-[#d3e4fe]/30 transition-colors"
               >
-                Reset
+                {t('Reset')}
               </button>
             </div>
           </div>
@@ -164,17 +165,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex flex-col gap-0.5">
           <div className="flex items-center gap-2">
             <span className="font-mono text-[11px] text-[#006a61] font-semibold uppercase tracking-wider">
-              Public Intelligence Hub
+              {t('Public Intelligence Hub')}
             </span>
             <span className="text-[#76777d] font-mono text-[11px]">•</span>
             <span className="font-mono text-[11px] text-[#45464d]">GeoID: MH-DHA-2024</span>
           </div>
           <h1 className="font-bold text-[28px] lg:text-[32px] text-[#0b1c30] tracking-tight">
-            Good morning, Anita
+            {t('Good morning, Anita')}
           </h1>
           <p className="text-[15px] text-[#45464d] max-w-3xl leading-relaxed">
-            Track community infrastructure reports, verify public data coverage, and understand
-            evidence-grounded civic priorities.
+            {t('Track community infrastructure reports, verify public data coverage, and understand evidence-grounded civic priorities.')}
           </p>
         </div>
 
@@ -187,7 +187,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="material-symbols-outlined text-[18px] group-hover:rotate-90 transition-transform">
               add_circle
             </span>
-            <span>+ Report a Problem</span>
+            <span>+ {t('Report a Problem')}</span>
           </button>
           <button
             type="button"
@@ -197,7 +197,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="material-symbols-outlined text-[18px] text-[#006a61]">
               explore
             </span>
-            <span>Explore Ward Map</span>
+            <span>{t('Explore Ward Map')}</span>
           </button>
         </div>
       </header>
@@ -208,7 +208,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="bg-[#ffffff] p-4 rounded-xl shadow-xs border border-[#e5eeff] hover:shadow-md transition-shadow flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#45464d] mb-2">
             <span className="font-semibold text-[11px] uppercase tracking-wider text-[#76777d]">
-              Citizen Tracker
+              {t('Citizen Tracker')}
             </span>
             <span className="material-symbols-outlined text-[#006a61] text-[22px]">
               assignment_turned_in
@@ -217,16 +217,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
               <span className="text-[32px] text-[#0b1c30] font-bold leading-tight">4</span>
-              <span className="text-[13px] text-[#45464d]">Submitted Reports</span>
+              <span className="text-[13px] text-[#45464d]">{t('Submitted Reports')}</span>
             </div>
             <p className="font-mono text-[11px] text-[#006a61] mt-1 flex items-center gap-1.5 font-semibold">
               <span className="w-2 h-2 rounded-full bg-[#006a61]"></span>
-              2 Active Under Review <span className="text-[#76777d] font-normal">|</span> 2 Resolved
+              {t('2 Active Under Review')} <span className="text-[#76777d] font-normal">|</span> {t('2 Resolved')}
             </p>
           </div>
           <div className="mt-3 pt-2 bg-[#eff4ff] rounded px-2.5 py-1.5 flex items-center justify-between text-[#45464d] text-[12px]">
-            <span>Resolution rate: 50%</span>
-            <span className="font-mono text-[11px] text-[#006a61] font-semibold">SLA: 48h avg</span>
+            <span>{t('Resolution rate: 50%')}</span>
+            <span className="font-mono text-[11px] text-[#006a61] font-semibold">{t('SLA: 48h avg')}</span>
           </div>
         </div>
 
@@ -234,7 +234,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="bg-[#ffffff] p-4 rounded-xl shadow-xs border border-[#e5eeff] hover:shadow-md transition-shadow flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#45464d] mb-2">
             <span className="font-semibold text-[11px] uppercase tracking-wider text-[#76777d]">
-              District Scope
+              {t('District Scope')}
             </span>
             <span className="material-symbols-outlined text-[#ba1a1a] text-[22px]">
               warning
@@ -243,15 +243,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
               <span className="text-[32px] text-[#0b1c30] font-bold leading-tight">28</span>
-              <span className="text-[13px] text-[#45464d]">Active Incidents</span>
+              <span className="text-[13px] text-[#45464d]">{t('Active Incidents')}</span>
             </div>
             <p className="text-[12px] text-[#45464d] mt-1">
-              Across Dharashiv District (Ward 1 - Ward 12)
+              {t('Across Dharashiv District (Ward 1 - Ward 12)')}
             </p>
           </div>
           <div className="mt-3 pt-2 bg-[#eff4ff] rounded px-2.5 py-1.5 flex items-center justify-between text-[#45464d] text-[12px]">
-            <span className="text-[#ba1a1a] font-semibold">8 Critical Priority</span>
-            <span className="font-mono text-[11px] text-[#0b1c30]">20 Moderate</span>
+            <span className="text-[#ba1a1a] font-semibold">{t('8 Critical Priority')}</span>
+            <span className="font-mono text-[11px] text-[#0b1c30]">{t('20 Moderate')}</span>
           </div>
         </div>
 
@@ -259,7 +259,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="bg-[#ffffff] p-4 rounded-xl shadow-xs border border-[#e5eeff] hover:shadow-md transition-shadow flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#45464d] mb-2">
             <span className="font-semibold text-[11px] uppercase tracking-wider text-[#76777d]">
-              Vector Grounding
+              {t('Vector Grounding')}
             </span>
             <span className="material-symbols-outlined text-[#006a61] text-[22px]">
               dataset
@@ -268,10 +268,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
               <span className="text-[32px] text-[#0b1c30] font-bold leading-tight">14</span>
-              <span className="text-[13px] text-[#45464d]">Public Datasets</span>
+              <span className="text-[13px] text-[#45464d]">{t('Public Datasets')}</span>
             </div>
             <p className="text-[12px] text-[#45464d] mt-1 truncate">
-              Linked OGD, JJM, PMGSY, &amp; NHM Feeds
+              {t('Linked OGD, JJM, PMGSY, & NHM Feeds')}
             </p>
           </div>
           <div className="mt-3 pt-2 bg-[#eff4ff] rounded px-2.5 py-1.5 flex items-center justify-between text-[12px]">
@@ -284,7 +284,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="bg-[#ffffff] p-4 rounded-xl shadow-xs border border-[#e5eeff] hover:shadow-md transition-shadow flex flex-col justify-between">
           <div className="flex items-center justify-between text-[#45464d] mb-2">
             <span className="font-semibold text-[11px] uppercase tracking-wider text-[#76777d]">
-              Evidence Coverage
+              {t('Evidence Coverage')}
             </span>
             <span className="material-symbols-outlined text-[#006a61] text-[22px]">
               donut_large
@@ -293,10 +293,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex flex-col">
             <div className="flex items-baseline gap-2">
               <span className="text-[32px] text-[#006a61] font-bold leading-tight">84.2%</span>
-              <span className="text-[13px] text-[#45464d]">Validated Ratio</span>
+              <span className="text-[13px] text-[#45464d]">{t('Validated Ratio')}</span>
             </div>
             <p className="text-[12px] text-[#45464d] mt-1">
-              Reports with verifiable public records
+              {t('Reports with verifiable public records')}
             </p>
           </div>
           <div className="mt-3">

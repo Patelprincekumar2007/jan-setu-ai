@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { CitizenReport } from '../../types';
 import { ASSETS } from '../../data/mockData';
+import { LocalizedTree } from '../../i18n';
 
 interface EvidenceExplorerViewProps {
   selectedReport?: CitizenReport;
@@ -58,6 +59,7 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
   };
 
   return (
+    <LocalizedTree>
     <div className="flex flex-col w-full pb-10">
       {/* Sub-header ribbon */}
       <div className="px-4 lg:px-6 py-3 bg-[#eff4ff] border-b border-[#e5eeff] flex flex-col gap-2">
@@ -831,5 +833,6 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
         </div>
       )}
     </div>
+    </LocalizedTree>
   );
 };
