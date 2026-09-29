@@ -16,6 +16,11 @@ NagrikLens AI is an institutional decision-support prototype built to demonstrat
 - It is NOT an official government portal, grievance redressal system, or government-endorsed application.
 - It does NOT claim official government affiliation, deployment, or partnership.
 
+### Interface Languages
+The interface can be selected in English, Hindi, or Gujarati from the language controls in the header or Settings. The selection is saved in the current browser and applied immediately, including the document language setting.
+
+Hindi and Gujarati translations are provided through the frontend locale catalog. UI strings without a catalog entry fall back to English. Citizen-submitted narratives, public-data records, source names, and technical identifiers are kept as supplied rather than automatically rewritten.
+
 ---
 
 ## 2. Information Separation Architecture
