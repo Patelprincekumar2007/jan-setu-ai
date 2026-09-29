@@ -6,8 +6,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
+from app.config import settings
 from app.models.citizen_request import CitizenRequest, RequestEvidenceMatch
 from app.models.evidence import Evidence
+from app.models.request_analysis import RequestAnalysis
 from app.schemas.citizen_request import (
     CitizenRequestCreate,
     CitizenRequestResponse,
@@ -16,6 +18,7 @@ from app.schemas.citizen_request import (
 from app.services.gemini_service import gemini_service
 from app.services.hybrid_retrieval_service import hybrid_retrieval_service
 from app.services.retrieval_query_builder import build_retrieval_query
+from rag.service import rag_service
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/requests", tags=["Citizen Requests"])
@@ -189,3 +192,61 @@ def get_request_evidence(reference_id: str, db: Session = Depends(get_db)):
         "evidence_count": len(results),
         "results": results,
     }
+
+
+@router.post("/{reference_id}/analysis")
+def create_request_analysis(reference_id: str, db: Session = Depends(get_db)):
+    request = db.query(CitizenRequest).filter(
+        CitizenRequest.reference_id == reference_id
+    ).first()
+    if not request:
+        raise HTTPException(status_code=404, detail="Request not found")
+
+    matches = db.query(RequestEvidenceMatch).filter(
+        RequestEvidenceMatch.request_id == reference_id
+    ).order_by(RequestEvidenceMatch.rank.asc()).all()
+    evidence_records = []
+    for match in matches:
+        evidence = db.query(Evidence).filter(
+            Evidence.evidence_identifier == match.evidence_id
+        ).first()
+        if evidence is not None:
+            evidence_records.append(_evidence_payload(evidence))
+
+    analysis = db.query(RequestAnalysis).filter(
+        RequestAnalysis.request_id == reference_id
+    ).first()
+    if analysis is None:
+        analysis = RequestAnalysis(
+            id=f"ran-{uuid.uuid4().hex[:12]}",
+            request_id=reference_id,
+            model_name="deterministic-no-evidence",
+            status="FAILED",
+            summary="",
+            structured_result={},
+        )
+        db.add(analysis)
+
+    try:
+        result, analysis_status = rag_service.analyze(request, evidence_records)
+        structured_result = result.model_dump()
+        analysis.model_name = "deterministic-no-evidence" if analysis_status == "NO_EVIDENCE" else settings.GEMINI_MODEL
+        analysis.status = analysis_status
+        analysis.summary = result.summary
+        analysis.structured_result = structured_result
+        db.commit()
+        db.refresh(analysis)
+        return {
+            "reference_id": reference_id,
+            "status": analysis.status,
+            "model_name": analysis.model_name,
+            "analysis": structured_result,
+        }
+    except Exception:
+        logger.warning("Grounded analysis failed for request %s", reference_id)
+        analysis.model_name = settings.GEMINI_MODEL
+        analysis.status = "FAILED"
+        analysis.summary = "Grounded analysis could not be generated."
+        analysis.structured_result = {"error": analysis.summary}
+        db.commit()
+        raise HTTPException(status_code=503, detail=analysis.summary)

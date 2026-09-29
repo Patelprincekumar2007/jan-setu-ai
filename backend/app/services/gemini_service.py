@@ -20,6 +20,27 @@ class GeminiService:
     def is_configured(self) -> bool:
         return self._client is not None
 
+    def generate_grounded_analysis_json(self, system_instruction: str, user_data: Dict[str, Any]) -> str:
+        if not self._client:
+            raise RuntimeError("Gemini is not configured")
+        try:
+            from google.genai import types
+
+            response = self._client.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=json.dumps(user_data, ensure_ascii=False),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_mime_type="application/json",
+                ),
+            )
+            if not response.text:
+                raise ValueError("Gemini returned an empty response")
+            return response.text
+        except Exception as error:
+            logger.warning("Grounded Gemini analysis failed.")
+            raise RuntimeError("Grounded analysis could not be generated") from error
+
     def understand_complaint(self, original_narrative: str, category: str, state: str, district: str, locality: str = None) -> Dict[str, Any]:
         result, _ = self.understand_complaint_with_status(
             original_narrative, category, state, district, locality

@@ -9,6 +9,7 @@ from app.main import app
 from app.models.dataset import Dataset
 from app.models.evidence import Evidence
 from app.models.citizen_request import RequestEvidenceMatch
+from app.models.request_analysis import RequestAnalysis
 from app.services.gemini_service import gemini_service
 from app.services.hybrid_retrieval_service import hybrid_retrieval_service
 
@@ -159,3 +160,67 @@ def test_request_persists_when_retrieval_fails(request_api, monkeypatch):
     assert response.json()["status"] == "RECEIVED"
     assert response.json()["retrieval_status"] == "FAILED"
     assert "private provider detail" not in response.text
+
+
+def test_analysis_endpoint_persists_validated_grounded_result(request_api, monkeypatch):
+    client, db = request_api
+    created = client.post("/api/requests", json=request_payload()).json()
+    from rag.schemas import GroundedAnalysis
+
+    result = GroundedAnalysis.model_validate({
+        "summary": "The dataset contains a district-level water coverage value.",
+        "observations": [{
+            "statement": "The source reports district-level coverage.",
+            "evidence_ids": ["ke-001"],
+        }],
+        "evidence_used": ["ke-001"],
+        "evidence_gaps": ["No facility-level measurement is available."],
+        "source_references": ["OGD-JJM-2024-MH-01"],
+        "limitations": ["The evidence is district-level."],
+    })
+    monkeypatch.setattr(
+        "rag.service.rag_service.analyze", lambda *_: (result, "COMPLETED")
+    )
+
+    response = client.post(f"/api/requests/{created['reference_id']}/analysis")
+
+    assert response.status_code == 200
+    assert response.json()["analysis"]["observations"][0]["evidence_ids"] == ["ke-001"]
+    assert response.json()["analysis"]["source_references"] == ["OGD-JJM-2024-MH-01"]
+    persisted = db.query(RequestAnalysis).filter_by(request_id=created["reference_id"]).one()
+    assert persisted.status == "COMPLETED"
+    assert persisted.structured_result["evidence_used"] == ["ke-001"]
+
+
+def test_analysis_without_evidence_returns_insufficient_result(request_api, monkeypatch):
+    client, db = request_api
+    monkeypatch.setattr(hybrid_retrieval_service, "search", lambda **kwargs: {"results": []})
+    created = client.post("/api/requests", json=request_payload()).json()
+    monkeypatch.setattr(
+        "rag.service.gemini_service.generate_grounded_analysis_json",
+        lambda *_: pytest.fail("Gemini must not run without evidence"),
+    )
+
+    response = client.post(f"/api/requests/{created['reference_id']}/analysis")
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "NO_EVIDENCE"
+    assert response.json()["analysis"]["summary"] == "Available public-data evidence is insufficient to establish this."
+    persisted = db.query(RequestAnalysis).filter_by(request_id=created["reference_id"]).one()
+    assert persisted.status == "NO_EVIDENCE"
+
+
+def test_analysis_failure_is_persisted_and_safe(request_api, monkeypatch):
+    client, db = request_api
+    created = client.post("/api/requests", json=request_payload()).json()
+    monkeypatch.setattr(
+        "rag.service.rag_service.analyze",
+        lambda *_: (_ for _ in ()).throw(RuntimeError("provider secret detail")),
+    )
+
+    response = client.post(f"/api/requests/{created['reference_id']}/analysis")
+
+    assert response.status_code == 503
+    assert "provider secret detail" not in response.text
+    persisted = db.query(RequestAnalysis).filter_by(request_id=created["reference_id"]).one()
+    assert persisted.status == "FAILED"
