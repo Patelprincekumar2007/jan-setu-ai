@@ -1,0 +1,70 @@
+[
+  {
+    "query": "water problem in Dharashiv",
+    "category": "Direct location query",
+    "expected_district": "Dharashiv",
+    "expected_evidence_ids": [
+      "EVID-ds-jjm-water-coverage-2024-OGD-JJM-2024-MH-01"
+    ],
+    "description": "District-level water grievance query for Dharashiv, Maharashtra"
+  },
+  {
+    "query": "rural drinking water tap connections and pipeline coverage in Pune",
+    "category": "Natural-language water query",
+    "expected_district": "Pune",
+    "expected_evidence_ids": [
+      "EVID-ds-jjm-water-coverage-2024-OGD-JJM-2024-MH-02"
+    ],
+    "description": "Specific infrastructure coverage query for Pune district"
+  },
+  {
+    "query": "rural tap water coverage percentage",
+    "category": "Metric query",
+    "expected_category": "Water",
+    "description": "Metric-focused search query across rural tap water datasets"
+  },
+  {
+    "query": "drinking water supply in Maharashtra state districts",
+    "category": "State query",
+    "expected_state": "Maharashtra",
+    "description": "State-level water infrastructure query"
+  },
+  {
+    "query": "Jal Jeevan Mission household connections in Bengaluru Rural",
+    "category": "District query",
+    "expected_district": "Bengaluru Rural",
+    "expected_evidence_ids": [
+      "EVID-ds-jjm-water-coverage-2024-OGD-JJM-2024-KA-01"
+    ],
+    "description": "District-level JJM baseline query in Karnataka"
+  },
+  {
+    "query": "धाराशिव में पानी की समस्या और नल कनेक्शन",
+    "category": "Hindi query",
+    "expected_district": "Dharashiv",
+    "expected_evidence_ids": [
+      "EVID-ds-jjm-water-coverage-2024-OGD-JJM-2024-MH-01"
+    ],
+    "description": "Multilingual Hindi query for Dharashiv drinking water"
+  },
+  {
+    "query": "ધારાશિવમાં પીવાના પાણીની સમસ્યા",
+    "category": "Gujarati query",
+    "expected_district": "Dharashiv",
+    "expected_evidence_ids": [
+      "EVID-ds-jjm-water-coverage-2024-OGD-JJM-2024-MH-01"
+    ],
+    "description": "Multilingual Gujarati query for Dharashiv drinking water"
+  },
+  {
+    "query": "rural tap water baseline",
+    "category": "Broad water query",
+    "expected_category": "Water",
+    "description": "Broad civic sector query"
+  },
+  {
+    "query": "quantum computing astrophysics telescope",
+    "category": "Irrelevant query",
+    "description": "Completely irrelevant query to verify non-matching / low similarity behavior"
+  }
+]
