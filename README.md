@@ -29,30 +29,44 @@ Public data is never presented as citizen submissions, and AI inferences are nev
 
 ---
 
-## 3. Public Data & Knowledge Layer (Phase 2 Step 3A, 3B, 3C-1, 3C-2A)
+## 3. Public Data & Knowledge Layer (Phase 2 Steps 3C-1 through 3C-4)
 
-### Verified Public Baseline Data
-- **Dataset Title:** District-wise Rural Household Tap Water Coverage (JJM Baseline)
-- **Dataset ID:** `ds-jjm-water-coverage-2024`
-- **Source:** Open Government Data (OGD) Platform India / Ministry of Jal Shakti
-- **Source URL:** https://data.gov.in/resource/district-wise-rural-drinking-water-supply-and-tap-connections
-- **Publisher:** Department of Drinking Water and Sanitation, Ministry of Jal Shakti, Government of India
-- **License:** Government Open Data License - India (GODL)
-- **Geographic Scope:** National (District-Level)
-- **Ingestion Status:** INGESTED (25 district baseline records with row-level provenance)
+### Public Evidence
+The active API stores public evidence in SQLite through `app.models.Evidence`. Dataset coverage and provenance depend on the records currently loaded into that database; the included seed data is a limited prototype corpus, not a complete account of real-world conditions.
 
 ### Knowledge Evidence & Retrieval Contract (Step 3C-1, 3C-2A, 3C-2B)
-- **Knowledge Evidence Concept:** Structured, factual representation of verified public data records prepared for future embedding and retrieval.
-- **Deterministic Evidence Builder:** Generates grounded factual text without LLM hallucinations (e.g. *"District Dharashiv, Maharashtra recorded rural tap water coverage of 50.76% according to the District-wise Rural Household Tap Water Coverage (JJM Baseline) for 2024."*).
-- **Provenance Preservation:** Every knowledge evidence record stores `dataset_id`, `record_id`, `source_name`, `source_reference`, and `source_url`.
-- **Idempotency:** Re-ingesting a dataset clears existing knowledge entries for that dataset and re-populates them without duplication.
-- **Retrieval Contract:** Defined by `BaseKnowledgeRetriever`. Baseline retrieval is powered by `DeterministicMetadataRetriever` (exact and partial administrative filters, top_k validation).
+### Hybrid Retrieval (Step 3C-2C)
+- `GET /api/knowledge/search` provides deterministic metadata/text retrieval.
+- `GET /api/knowledge/semantic-search` searches the local FAISS `IndexFlatIP` vector store.
+- `GET /api/knowledge/hybrid-search` merges FAISS candidates with structured metadata matches and deduplicates by evidence ID.
+- Ranking is `metadata_match_level` descending, then semantic similarity descending, then `evidence_id` ascending. Match levels are 3 (state + district + category), 2 (district + category), 1 (category), and 0 (semantic-only). Similarity is not confidence.
+- The local FAISS index stores an adjacent evidence-ID mapping file so vector positions retain their provenance after reload.
 
-- **Semantic Retrieval:** FAISS IndexFlatIP local vector index powered by SentenceTransformers (`paraphrase-multilingual-MiniLM-L12-v2`) over L2-normalized vectors.
-- **Stale Detection:** Content hash validation ensures vector index stays synchronized with SQLite database.
-- **Semantic Retrieval API (3C-2B):** Natural language intent matches vector candidates, subsequently filtered securely with structured administrative criteria (AND constraints). This ensures highly relevant matches strictly bound to requested locations.
+### Citizen Request to Retrieval (Step 3C-3)
+`POST /api/requests` stores the request before extraction/retrieval, uses Gemini extraction when configured, builds a query from extracted and submitted fields, runs hybrid retrieval, and stores links in `request_evidence_matches`. Gemini or retrieval failure does not reject an otherwise valid submission. Request status remains `RECEIVED`; retrieval status is one of `NOT_RUN`, `COMPLETED`, `NO_EVIDENCE`, or `FAILED`.
 
-> **Current Retrieval Mode:** Deterministic metadata retrieval and standalone semantic search testing endpoints are active. The citizen request flow is not yet connected to the semantic layer (that happens in a future step). Retrieval ≠ generation.
+`GET /api/requests/{reference_id}` returns extraction/retrieval status and evidence count. `GET /api/requests/{reference_id}/evidence` returns canonical evidence and source provenance without duplicating evidence records.
+
+### RAG / Grounded Analysis (Step 3C-4)
+`POST /api/requests/{reference_id}/analysis` builds context from the citizen request and linked evidence, sends citizen content as untrusted data to the existing configured Gemini client, validates the response with Pydantic, checks evidence/source references against supplied records, and persists it in `request_analyses`. GET endpoints do not generate analysis. No-evidence results explicitly say: “Available public-data evidence is insufficient to establish this.”
+
+Retrieval:
+```text
+Query -> Evidence
+```
+
+RAG:
+```text
+Query -> Evidence -> Gemini -> Grounded Analysis
+```
+
+### Limitations
+- Public dataset coverage is limited and may not include locality-level or current conditions.
+- FAISS is a local prototype vector index; it is not a hosted or distributed retrieval service.
+- A similarity score is a retrieval signal, not confidence or accuracy.
+- Retrieved evidence is not proof of complete real-world conditions.
+- RAG cannot compensate for missing or outdated evidence; citizen requests remain unverified.
+- These request/retrieval/analysis steps do not add prioritisation, recommendations, or government decision automation. The pre-existing reports/priority modules remain separate.
 
 ---
 
@@ -69,15 +83,17 @@ Public data is never presented as citizen submissions, and AI inferences are nev
   - Official Google GenAI SDK (`google-genai`)
   - SQLite Database (`nagriklens.db`) with SQLAlchemy ORM
   - Pydantic v2 validation models
-  - Pytest &amp; HTTPX test suite (100% deterministic tests, 54/54 passing)
+  - Pytest &amp; HTTPX tests with Gemini mocked for deterministic request/RAG coverage
 
 ---
 
 ## 5. API Endpoints
 
 ### Citizen Request APIs
-- `POST /api/requests`: Submit a citizen development request (triggers Gemini structured understanding if configured).
-- `GET /api/requests/{reference_id}`: Track submitted request by reference ID (`NL-YYYYMMDD-XXXXXX`).
+- `POST /api/requests`: Submit a citizen development request and run extraction plus retrieval.
+- `GET /api/requests/{reference_id}`: Track request status, extraction status, retrieval status, and evidence count.
+- `GET /api/requests/{reference_id}/evidence`: Read linked public evidence and provenance.
+- `POST /api/requests/{reference_id}/analysis`: Generate and persist evidence-grounded analysis on demand.
 
 ### Public Dataset APIs
 - `GET /api/datasets`: List all registered public datasets with metadata, license, and ingestion status.
@@ -85,13 +101,12 @@ Public data is never presented as citizen submissions, and AI inferences are nev
 - `GET /api/datasets/{dataset_id}/records`: Get normalized civic metric records with optional `state`, `district`, or `category` filters.
 
 ### Knowledge Retrieval Layer APIs
-- `GET /api/knowledge/search`: Retrieve grounded knowledge evidence matching query, state, district, category, and top_k (1-20) using deterministic metadata filtering.
-- `GET /api/knowledge/semantic-search`: Retrieve grounded knowledge evidence using FAISS vector semantic similarity.
-- `GET /api/knowledge/status`: Check the availability, freshness, and dimension of the vector index.
-- `GET /api/knowledge/datasets/{dataset_id}`: Get knowledge summary and evidence count for a dataset.
+- `GET /api/knowledge/search`: Deterministic metadata/text retrieval.
+- `GET /api/knowledge/semantic-search`: Semantic retrieval through the local FAISS vector store.
+- `GET /api/knowledge/hybrid-search`: Metadata + semantic retrieval with deterministic ranking.
 
 ### System
-- `GET /health`: Basic health check (`{"status": "ok", "service": "nagriklens-ai-api"}`).
+- `GET /health` and `GET /api/v1/health`: API and service health.
 
 ---
 
@@ -99,8 +114,11 @@ Public data is never presented as citizen submissions, and AI inferences are nev
 
 Run backend automated test suite:
 ```bash
-pytest -v
+$env:PYTHONPATH = "backend"
+pytest -q tests/test_hybrid_retrieval.py tests/test_retrieval_query_builder.py tests/test_citizen_request_flow.py tests/test_rag_context.py tests/test_rag_service.py tests/test_vector_store_metadata.py
 ```
+
+The legacy `tests/test_semantic_retrieval.py` currently imports `backend.main`, which is not present in the active `backend/app` layout; the full `pytest -q` command therefore stops during collection until that older test is migrated.
 
 Run frontend production build & TypeScript check:
 ```bash

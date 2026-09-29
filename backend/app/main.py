@@ -68,6 +68,7 @@ app.include_router(notifications.router, prefix=settings.API_V1_STR)
 app.include_router(admin.router, prefix=settings.API_V1_STR)
 app.include_router(knowledge.router)
 app.include_router(requests.router)
+app.include_router(health.router)
 
 @app.on_event("startup")
 def on_startup():

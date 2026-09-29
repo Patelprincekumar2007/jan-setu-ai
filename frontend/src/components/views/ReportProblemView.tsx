@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { CitizenReport, NavigationTab } from '../../types';
+import { NavigationTab } from '../../types';
 import { ASSETS, DEMO_PRESET_COMPLAINTS } from '../../data/mockData';
+import { CitizenRequestInput, CitizenRequestRecord } from '../../api/requests';
 
 interface ReportProblemViewProps {
   onNavigate: (tab: NavigationTab) => void;
-  onSubmitReport: (report: Partial<CitizenReport>) => void;
+  onSubmitRequest: (request: CitizenRequestInput) => Promise<CitizenRequestRecord>;
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
 }
 
 export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
   onNavigate,
-  onSubmitReport,
+  onSubmitRequest,
   onShowToast,
 }) => {
   const [narrative, setNarrative] = useState<string>(
@@ -62,30 +63,28 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
     onShowToast('Preset Applied', `Loaded telemetry scenario: ${preset.title}`);
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setIsSubmitting(true);
-    setTimeout(() => {
+    try {
+      const created = await onSubmitRequest({
+        citizen_request: narrative.trim(),
+        category: selectedCategory,
+        state: stateName,
+        district,
+        locality: ward || city,
+        affected_households: Number.parseInt(households, 10) || undefined,
+      });
+      onShowToast('Request received', `Reference ID: ${created.reference_id}`, 'success');
+      onNavigate('my-reports');
+    } catch (error) {
+      onShowToast(
+        'Request could not be submitted',
+        error instanceof Error ? error.message : 'The request could not be saved.',
+        'warning',
+      );
+    } finally {
       setIsSubmitting(false);
-      const newReport: Partial<CitizenReport> = {
-        title: `${selectedCategory} infrastructure breakdown at ${ward}`,
-        narrative,
-        category: selectedCategory as any,
-        location: ward,
-        ward: ward.includes('Ward 4') ? 'Ward 4' : 'Ward 8',
-        householdsAffected: parseInt(households) || 85,
-        facilityName: facility,
-        priorityScore: selectedCategory === 'Water' ? 72 : 65,
-        priorityLabel: 'Priority: 72/100 (Immediate Public Health Risk)',
-        similarityScore: 0.942,
-        groundingDoc: 'Jal Jeevan Mission Asset DB: Borewell-MH-DH-0498',
-        groundingAgency: 'Open Government Data Platform',
-        status: 'Active Under Review',
-        evidenceFound: true,
-      };
-      onSubmitReport(newReport);
-      onShowToast('Submission Logged', 'Grievance dispatched to Ward 4 Queue and OGD RAG analysis initiated.', 'success');
-      onNavigate('evidence-explorer');
-    }, 1200);
+    }
   };
 
   return (
@@ -96,25 +95,24 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
           <div>
             <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
               <span className="material-symbols-outlined text-[16px]">verified</span>
-              <span>Audited Telemetry Intake Workflow</span>
+              <span>Citizen request intake</span>
             </div>
             <h1 className="text-[24px] font-bold text-[#0b1c30] tracking-tight mt-0.5">
               Report a Community Problem
             </h1>
             <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
-              Tell us what is happening. You can write naturally in any supported language — our
-              pipeline will structure the information for verified evidence matching.
+              Describe the issue and location. Extraction and public-data retrieval run after submission.
             </p>
           </div>
 
           <div className="flex items-center gap-2 self-start md:self-auto bg-[#eff4ff] px-3 py-1.5 rounded-lg border border-[#dce9ff]">
             <span className="w-2.5 h-2.5 rounded-full bg-[#006a61] animate-pulse"></span>
             <span className="font-mono text-[11px] text-[#0b1c30] font-semibold">
-              NLP Node #74 Ready
+              Processing status is reported after submission
             </span>
             <span className="font-mono text-[11px] text-[#76777d]">|</span>
             <span className="font-mono text-[11px] text-[#45464d]">
-              Model: paraphrase-multilingual-MiniLM
+              Decision-support prototype
             </span>
           </div>
         </div>
@@ -209,7 +207,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
               </label>
               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-mono text-[11px] font-semibold self-start sm:self-auto">
                 <span className="material-symbols-outlined text-[14px]">translate</span>
-                <span>Multi-Lingual NLP Active</span>
+                <span>Describe the issue in your own words</span>
               </span>
             </div>
 
@@ -219,11 +217,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                 neurology
               </span>
               <p className="text-[12px] leading-relaxed">
-                Auto-translating and extracting semantic entities via{' '}
-                <span className="font-mono text-[#0b1c30] font-semibold">
-                  paraphrase-multilingual-MiniLM
-                </span>
-                . You may freely use Hindi, Marathi, Gujarati, or colloquial English.
+                Include the reported problem, affected people, and location. Avoid unnecessary personal details.
               </p>
             </div>
 
@@ -658,163 +652,12 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
               </div>
             </div>
 
-            {/* Grounding Confidence Checklist */}
-            <div className="bg-[#eff4ff] p-3 rounded-lg space-y-1.5 border border-[#dce9ff]">
-              <div className="flex items-center justify-between">
-                <span className="text-[12px] text-[#0b1c30] font-semibold">
-                  GIS Layer Reconciliation
-                </span>
-                <span className="font-mono text-[11px] text-[#006a61] font-bold">
-                  MATCH: CONFIRMED
-                </span>
-              </div>
-              <div className="space-y-1 font-mono text-[11px] text-[#45464d]">
-                <div className="flex items-center justify-between">
-                  <span>Jal Jeevan Mission Asset DB:</span>
-                  <span className="text-[#0b1c30] font-semibold">Borewell-MH-DH-0498</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>National Health Mission Registry:</span>
-                  <span className="text-[#0b1c30] font-semibold">PHC-DHARASHIV-W4</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <span>Municipal Pipeline Scheme:</span>
-                  <span className="text-[#0b1c30] font-semibold">Gravity Main #12 (Offline)</span>
-                </div>
-              </div>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Live AI Structuring Preview & Action Bar */}
+      {/* Submission action */}
       <div className="space-y-4">
-        {/* Real-Time AI Structuring Preview Floating Card */}
-        <div className="bg-[#ffffff] p-5 rounded-xl shadow-md border border-[#e5eeff] space-y-4">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-lg bg-[#eff4ff] border border-[#dce9ff] flex items-center justify-center text-[#0b1c30]">
-                <span className="material-symbols-outlined text-[24px]">psychology</span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-semibold text-[16px] text-[#0b1c30]">
-                    Live AI Structuring Preview
-                  </h3>
-                  <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-mono text-[11px] font-semibold">
-                    Synthesized
-                  </span>
-                </div>
-                <p className="text-[12px] text-[#45464d]">
-                  Structured telemetry parsed in real time before formal dispatch to municipal
-                  engineers.
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div className="flex flex-col text-right">
-                <span className="font-mono text-[10px] text-[#76777d] uppercase tracking-wider">
-                  Vector Grounding Confidence
-                </span>
-                <span className="font-mono text-[13px] font-bold text-[#006a61]">
-                  0.94 / 1.00 (High Veracity)
-                </span>
-              </div>
-              <div className="w-12 h-12 relative flex items-center justify-center">
-                <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                  <path
-                    className="text-[#dce9ff]"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                  />
-                  <path
-                    className="text-[#006a61]"
-                    d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeDasharray="94, 100"
-                    strokeLinecap="round"
-                    strokeWidth="3.5"
-                  />
-                </svg>
-                <span className="absolute font-mono text-[11px] font-bold text-[#0b1c30]">
-                  94%
-                </span>
-              </div>
-            </div>
-          </div>
-
-          {/* 4-Quadrant Preview Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 pt-1">
-            {/* Card 1 */}
-            <div className="bg-[#eff4ff] p-3 rounded-lg space-y-1 border border-[#dce9ff]">
-              <span className="font-mono text-[11px] text-[#76777d] uppercase flex items-center gap-1 font-semibold">
-                <span className="material-symbols-outlined text-[16px] text-[#006a61]">
-                  assignment_turned_in
-                </span>
-                Identified Problem
-              </span>
-              <p className="font-semibold text-[14px] text-[#0b1c30] leading-snug">
-                Potable water supply breakdown at public healthcare unit
-              </p>
-              <span className="text-[11px] text-[#45464d] block mt-1">
-                Categorized under Section 4(B) Public Utilities Mandate
-              </span>
-            </div>
-
-            {/* Card 2 */}
-            <div className="bg-[#eff4ff] p-3 rounded-lg space-y-1 border border-[#dce9ff]">
-              <span className="font-mono text-[11px] text-[#76777d] uppercase flex items-center gap-1 font-semibold">
-                <span className="material-symbols-outlined text-[16px] text-[#0b1c30]">
-                  account_balance
-                </span>
-                Extracted Entity
-              </span>
-              <p className="font-semibold text-[14px] text-[#0b1c30] leading-snug">
-                Primary Health Centre (PHC), Ward 4
-              </p>
-              <span className="text-[11px] text-[#45464d] block mt-1">
-                Affiliated with Civil Hospital Zone, Dharashiv Urban
-              </span>
-            </div>
-
-            {/* Card 3 */}
-            <div className="bg-[#ffdad6]/40 p-3 rounded-lg space-y-1 border border-[#ffdad6]">
-              <span className="font-mono text-[11px] text-[#93000a] uppercase flex items-center gap-1 font-semibold">
-                <span className="material-symbols-outlined text-[16px] text-[#ba1a1a]">
-                  warning
-                </span>
-                Severity Signal
-              </span>
-              <p className="font-bold text-[14px] text-[#93000a] leading-snug">
-                High (Immediate Public Health Risk)
-              </p>
-              <span className="text-[11px] text-[#93000a]/80 block mt-1">
-                Breaches 72hr SLA trigger; patient exposure window: 12 days
-              </span>
-            </div>
-
-            {/* Card 4 */}
-            <div className="bg-[#dce9ff] p-3 rounded-lg space-y-1 border border-[#cbdbf5]">
-              <span className="font-mono text-[11px] text-[#76777d] uppercase flex items-center gap-1 font-semibold">
-                <span className="material-symbols-outlined text-[16px] text-[#006a61]">
-                  search_check
-                </span>
-                Missing Data Notice
-              </span>
-              <p className="text-[12px] text-[#0b1c30] leading-tight font-medium">
-                No water quality testing report attached; pipeline will query OGD Jal Jeevan Mission records.
-              </p>
-              <span className="font-mono text-[10px] text-[#006a61] block mt-1 font-semibold">
-                Automated RAG query ready for dispatch
-              </span>
-            </div>
-          </div>
-        </div>
-
         {/* Bottom Action Bar */}
         <div className="bg-[#ffffff] p-4 rounded-xl shadow-xs border border-[#e5eeff] flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5 text-[#45464d]">
@@ -822,7 +665,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
               shield
             </span>
             <p className="text-[12px]">
-              Submission creates an immutable audit trail on the Civic Intelligence ledger.
+              NagrikLens AI is a decision-support prototype, not an official government portal or grievance channel.
             </p>
           </div>
 
@@ -831,7 +674,8 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
               type="button"
               onClick={() => {
                 setDraftSaved(true);
-                onShowToast('Draft Cached', 'Local telemetry draft persisted in browser session storage.');
+                sessionStorage.setItem('nagriklens_request_draft', JSON.stringify({ narrative, selectedCategory, city, ward }));
+                onShowToast('Draft saved', 'Saved in this browser session.');
                 setTimeout(() => setDraftSaved(false), 2000);
               }}
               className="flex-1 sm:flex-none px-4 py-2.5 rounded-lg bg-[#eff4ff] hover:bg-[#dce9ff] text-[#0b1c30] text-[13px] font-semibold transition-colors flex items-center justify-center gap-1.5 border border-[#dce9ff]"
@@ -853,11 +697,11 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                   <span className="material-symbols-outlined text-[18px] animate-spin">
                     refresh
                   </span>
-                  <span>Structuring Telemetry &amp; Querying OGD...</span>
+                  <span>Saving request...</span>
                 </>
               ) : (
                 <>
-                  <span>Submit for AI Verification &amp; Evidence Search</span>
+                  <span>Submit request</span>
                   <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                 </>
               )}

@@ -134,9 +134,60 @@ The `backend.knowledge.vector_index` module provides an implementation for gener
 - Semantic pipeline: Validate Query -> Load Index -> Encode Query -> L2 Normalize -> FAISS Search -> Candidate IDs -> Lookup -> Filter -> Rank -> Top K.
 - Filtering is explicitly separated from embedding vector processing. Filters use AND logic applied after vector candidates are retrieved.
 
-> **Important Disclosure:** Generative RAG generation based on these retrieved vector contexts is NOT yet active. The semantic index currently acts only as an available retriever. Retrieval ≠ generation.
+## 5. Phase 2 Continuation: Hybrid Retrieval (Step 3C-2C)
 
-## 5. Next Steps
-- Phase 2 Step 3C-2C: Hybrid Search Orchestration.
-- Phase 3: Connected semantic retrieval and Generative RAG generation.
-- Phase 4: Transparent Multi-Criteria Decision Model (MCDM) scoring engine.
+The active application uses `app.models.Evidence`, `app.services.embedding_service`, and `app.services.vector_store`. `GET /api/knowledge/hybrid-search` merges the FAISS semantic candidate set with deterministic SQL metadata matches and deduplicates by `evidence_identifier`.
+
+Ranking is transparent and deterministic:
+1. `metadata_match_level` descending: 3 = exact state + district + category; 2 = exact district + category; 1 = exact category; 0 = semantic-only.
+2. FAISS similarity descending where available.
+3. `evidence_id` ascending as a stable tie-breaker.
+
+The score is a similarity signal, not a confidence estimate. FAISS is local to this prototype; its evidence-ID sidecar preserves vector provenance on reload.
+
+## 6. Citizen Request to Retrieval (Step 3C-3)
+
+```text
+POST /api/requests
+    -> persist request (status RECEIVED)
+    -> Gemini extraction when configured (safe fallback otherwise)
+    -> build concise retrieval query
+    -> hybrid retrieval
+    -> persist request_evidence_matches
+```
+
+Retrieval failures do not roll back the saved request. The independent retrieval status is `NOT_RUN`, `COMPLETED`, `NO_EVIDENCE`, or `FAILED`. `NO_EVIDENCE` means only that the configured retriever returned no matches; it does not establish absence of public data or of the reported condition.
+
+`GET /api/requests/{reference_id}` exposes extraction status, retrieval status, and evidence count. `GET /api/requests/{reference_id}/evidence` resolves each link to the canonical `Evidence` row and returns its available provenance.
+
+## 7. RAG / Grounded Analysis (Step 3C-4)
+
+```text
+Citizen request + linked evidence
+    -> build context with evidence IDs and source metadata
+    -> Gemini system instruction + clearly marked untrusted request data
+    -> Pydantic GroundedAnalysis validation
+    -> evidence-ID/source-reference allow-list validation
+    -> persist request_analyses
+```
+
+Analysis is generated only by `POST /api/requests/{reference_id}/analysis`; GET routes never call Gemini. No-evidence requests receive the explicit insufficient-evidence result. Provider errors and invalid output are stored as `FAILED` and returned without stack traces or provider details.
+
+## 8. Frontend Request Tracking
+
+The existing report form submits to the additive citizen-request API. The tracking view displays the reference ID, request/extraction/retrieval statuses, evidence count, source details, and an explicit action to request grounded analysis. It does not show confidence percentages, priority scores, or government recommendations for this flow.
+
+## 9. Limitations and Scope
+
+- Current public-data coverage is limited; missing evidence is not evidence that a reported issue is absent.
+- FAISS is a local prototype vector index; similarity is not confidence.
+- Retrieved evidence may be district-level, stale, or incomplete and cannot prove full real-world conditions.
+- RAG cannot compensate for missing evidence; citizen input remains unverified.
+- This continuation adds no priority scoring, hotspot detection, recommendations, scheme matching, or decision automation. Existing reports/priority modules are separate and unchanged.
+
+## 10. Locked Implementation Status
+
+- 3C-2C Hybrid Retrieval: LOCKED.
+- 3C-3 Citizen Request to Retrieval: LOCKED.
+- 3C-4 RAG / Grounded Analysis: LOCKED.
+- No subsequent phase is included in this continuation.

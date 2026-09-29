@@ -12,6 +12,7 @@ from app.models.citizen_request import RequestEvidenceMatch
 from app.models.request_analysis import RequestAnalysis
 from app.services.gemini_service import gemini_service
 from app.services.hybrid_retrieval_service import hybrid_retrieval_service
+from app.services.vector_store import vector_store
 
 
 @pytest.fixture
@@ -224,3 +225,22 @@ def test_analysis_failure_is_persisted_and_safe(request_api, monkeypatch):
     assert "provider secret detail" not in response.text
     persisted = db.query(RequestAnalysis).filter_by(request_id=created["reference_id"]).one()
     assert persisted.status == "FAILED"
+
+
+def test_root_health_and_knowledge_retrieval_routes(request_api, monkeypatch):
+    client, _ = request_api
+    monkeypatch.setattr(vector_store, "search", lambda *_args, **_kwargs: [("ke-001", 0.81)])
+    monkeypatch.setattr(
+        "app.routers.knowledge.embedding_service.embed_text",
+        lambda _query: __import__("numpy").array([1.0, 0.0]),
+    )
+
+    health = client.get("/health")
+    metadata = client.get("/api/knowledge/search?q=water&district=Dharashiv")
+    semantic = client.get("/api/knowledge/semantic-search?q=water%20problem&top_k=5")
+    hybrid = client.get("/api/knowledge/hybrid-search?q=water%20problem%20in%20Dharashiv")
+
+    assert health.status_code == 200
+    assert metadata.status_code == 200 and metadata.json()["result_count"] == 1
+    assert semantic.status_code == 200 and semantic.json()["results"][0]["similarity_score"] == 0.81
+    assert hybrid.status_code == 200 and hybrid.json()["results"][0]["evidence_id"] == "ke-001"

@@ -24,12 +24,14 @@ import { HowItWorksView } from './components/views/HowItWorksView';
 import { TechArchitectureView } from './components/views/TechArchitectureView';
 import { SystemMonitoringView } from './components/views/SystemMonitoringView';
 import { SettingsView } from './components/views/SettingsView';
+import { createCitizenRequestApi, CitizenRequestInput, CitizenRequestRecord } from './api/requests';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
   const [activeRole, setActiveRole] = useState<UserRole>('Analyst');
   const [language, setLanguage] = useState<AppLanguage>('EN');
   const [reports, setReports] = useState<CitizenReport[]>(INITIAL_REPORTS);
+  const [citizenRequests, setCitizenRequests] = useState<CitizenRequestRecord[]>([]);
   const [selectedReport, setSelectedReport] = useState<CitizenReport>(INITIAL_REPORTS[0]);
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
@@ -74,6 +76,12 @@ export default function App() {
       `${newReport.ticketId} dispatched to Ward 4 Queue. OGD vector search completed with 94% similarity.`,
       'success'
     );
+  };
+
+  const handleCreateCitizenRequest = async (input: CitizenRequestInput) => {
+    const created = await createCitizenRequestApi(input);
+    setCitizenRequests((current) => [created, ...current]);
+    return created;
   };
 
   return (
@@ -126,7 +134,7 @@ export default function App() {
                 setCurrentTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onSubmitReport={handleAddNewReport}
+              onSubmitRequest={handleCreateCitizenRequest}
               onShowToast={showToast}
             />
           )}
@@ -163,6 +171,7 @@ export default function App() {
           {currentTab === 'my-reports' && (
             <MyReportsView
               reports={reports}
+              requests={citizenRequests}
               onNavigate={(tab) => {
                 setCurrentTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });

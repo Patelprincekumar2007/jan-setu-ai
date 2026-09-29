@@ -39,11 +39,12 @@ def evidence(evidence_id, title, district="Dharashiv", category="Water"):
     )
 
 
-def configure_service(monkeypatch, semantic_records, metadata_records, vectors):
+def configure_service(monkeypatch, semantic_records, metadata_records, semantic_scores):
+    monkeypatch.setattr(hybrid_module.embedding_service, "embed_text", lambda _text: np.array([1.0, 0.0]))
     monkeypatch.setattr(
-        hybrid_module.embedding_service,
-        "embed_text",
-        lambda text: np.asarray(vectors[text], dtype="float32"),
+        hybrid_module.vector_store,
+        "search",
+        lambda _query, top_k: semantic_scores[:top_k],
     )
     db = Mock()
     db.query.side_effect = [FakeQuery(semantic_records), FakeQuery(metadata_records)]
@@ -56,10 +57,7 @@ def test_hybrid_search_merges_duplicate_and_preserves_provenance(monkeypatch):
         monkeypatch,
         [item],
         [item],
-        {
-            "water problem in Dharashiv": [1.0, 0.0],
-            "Dharashiv rural tap water coverage Dharashiv rural tap water coverage evidence content Source reference: OGD-JJM-2024-MH-01": [0.8, 0.6],
-        },
+        [("ke-001", 0.8)],
     )
 
     result = service.search(
@@ -84,14 +82,9 @@ def test_metadata_match_strength_precedes_similarity(monkeypatch):
     metadata = evidence("ke-002", "Exact metadata match")
     service, db = configure_service(
         monkeypatch,
-        [semantic, second_semantic, metadata],
+        [semantic, second_semantic],
         [metadata],
-        {
-            "water query": [1.0, 0.0],
-            "Highly similar Highly similar evidence content Source reference: OGD-JJM-2024-MH-01": [1.0, 0.0],
-            "Moderately similar Moderately similar evidence content Source reference: OGD-JJM-2024-MH-01": [0.8, 0.6],
-            "Exact metadata match Exact metadata match evidence content Source reference: OGD-JJM-2024-MH-01": [0.0, 1.0],
-        },
+        [("ke-001", 0.99), ("ke-003", 0.9)],
     )
 
     result = service.search(db, "water query", district="Dharashiv", category="Water", top_k=2)
@@ -103,11 +96,12 @@ def test_metadata_match_strength_precedes_similarity(monkeypatch):
 
 def test_ties_are_deterministic_and_top_k_is_applied(monkeypatch):
     records = [evidence("ke-002", "Equal score"), evidence("ke-001", "Equal score")]
-    vectors = {
-        "query": [1.0, 0.0],
-        "Equal score Equal score evidence content Source reference: OGD-JJM-2024-MH-01": [1.0, 0.0],
-    }
-    service, db = configure_service(monkeypatch, records, [], vectors)
+    service, db = configure_service(
+        monkeypatch,
+        records,
+        [],
+        [("ke-002", 0.8), ("ke-001", 0.8)],
+    )
 
     result = service.search(db, "query", top_k=1)
 
@@ -123,7 +117,7 @@ def test_invalid_query_or_top_k_is_rejected(query, top_k):
 
 
 def test_no_results_returns_empty_result(monkeypatch):
-    service, db = configure_service(monkeypatch, [], [], {"query": [1.0, 0.0]})
+    service, db = configure_service(monkeypatch, [], [], [])
 
     result = service.search(db, "query")
 

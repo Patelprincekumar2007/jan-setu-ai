@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 
 from app.models.evidence import Evidence
 from app.services.embedding_service import embedding_service
+from app.services.vector_store import vector_store
 
 
 class HybridRetrievalService:
@@ -23,16 +24,15 @@ class HybridRetrievalService:
             raise ValueError("top_k must be an integer between 1 and 20.")
 
         normalized_query = query.strip()
-        evidence_records = db.query(Evidence).all()
         query_vector = self._normalize(embedding_service.embed_text(normalized_query))
-        semantic_results = []
-        for evidence in evidence_records:
-            searchable_text = " ".join(
-                part for part in (evidence.title, evidence.description, evidence.raw_text or "") if part
-            )
-            evidence_vector = self._normalize(embedding_service.embed_text(searchable_text))
-            score = float(np.dot(query_vector, evidence_vector))
-            semantic_results.append((evidence, score))
+        vector_candidates = vector_store.search(query_vector, top_k=max(top_k * 10, 50))
+        semantic_scores = {evidence_id: score for evidence_id, score in vector_candidates}
+        semantic_records = []
+        if semantic_scores:
+            semantic_records = db.query(Evidence).filter(
+                Evidence.evidence_identifier.in_(semantic_scores)
+            ).all()
+        semantic_results = [(record, semantic_scores[record.evidence_identifier]) for record in semantic_records]
         semantic_results.sort(key=lambda item: (-item[1], item[0].evidence_identifier))
         semantic_by_id = {
             evidence.evidence_identifier: score
