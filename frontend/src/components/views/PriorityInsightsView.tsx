@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ASSETS } from '../../data/mockData';
+import { LocalizedTree } from '../../i18n';
 
 interface PriorityInsightsViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
@@ -32,6 +33,7 @@ export const PriorityInsightsView: React.FC<PriorityInsightsViewProps> = ({ onSh
   };
 
   return (
+    <LocalizedTree>
     <div className="flex flex-col w-full pb-10">
       {/* Sub-header Breadcrumb and System Status Ribbon */}
       <div className="w-full bg-[#eff4ff] px-4 lg:px-6 py-2.5 flex flex-wrap items-center justify-between gap-2 border-b border-[#e5eeff]">
@@ -828,5 +830,6 @@ export const PriorityInsightsView: React.FC<PriorityInsightsViewProps> = ({ onSh
         </div>
       </div>
     </div>
+    </LocalizedTree>
   );
 };

@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavigationTab, UserRole } from '../types';
 import { ASSETS } from '../data/mockData';
+import { useT } from '../i18n';
 
 interface SidebarProps {
   currentTab: NavigationTab;
@@ -19,6 +20,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   isMobileOpen,
   onCloseMobile,
 }) => {
+  const t = useT();
   const navItems: { group: string; items: { id: NavigationTab; label: string; icon: string }[] }[] = [
     {
       group: 'Core',
@@ -98,10 +100,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <div className="px-4 py-2.5">
             <div className="bg-[#eff4ff] rounded p-1 flex items-center justify-between">
               <span className="font-semibold text-[11px] text-[#45464d] uppercase tracking-wider pl-1.5">
-                Active Role
+                {t('Active Role')}
               </span>
               <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-semibold text-[11px]">
-                {activeRole} View
+                {t(activeRole)} {t('View')}
               </span>
             </div>
           </div>
@@ -111,7 +113,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             {navItems.map((group) => (
               <div key={group.group} className="flex flex-col">
                 <div className="px-2.5 pt-3 pb-1 font-semibold text-[11px] uppercase tracking-wider text-[#76777d]">
-                  {group.group}
+                  {t(group.group)}
                 </div>
                 {group.items.map((item) => {
                   const isActive = currentTab === item.id;
@@ -136,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       >
                         {item.icon}
                       </span>
-                      <span>{item.label}</span>
+                      <span>{t(item.label)}</span>
                     </button>
                   );
                 })}
@@ -162,7 +164,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       : 'text-[#45464d] hover:text-[#0b1c30] hover:bg-[#dce9ff]'
                   }`}
                 >
-                  {role}
+                  {t(role)}
                 </button>
               );
             })}

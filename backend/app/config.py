@@ -16,6 +16,7 @@ class Settings:
     API_V1_STR: str = "/api/v1"
 
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_MODEL: str = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
     DATABASE_URL: str = os.getenv("DATABASE_URL", "sqlite:///./nagriklens.db")
 
     JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY", "nagriklens-ai-hackathon-secret-key-2026")

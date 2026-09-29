@@ -1,167 +1,114 @@
-import React, { useState } from 'react';
-import { PUBLIC_DATASETS } from '../../data/mockData';
+import React, { useEffect, useState } from 'react';
+import { Dataset, fetchDatasetsApi } from '../../api/datasets';
+import { useT } from '../../i18n';
 
 interface DataSourcesViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
 }
 
+const categories = ['All', 'Water', 'Road', 'Health', 'Education', 'Other'];
+
 export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast }) => {
-  const [filterCategory, setFilterCategory] = useState<string>('All');
-  const [syncingId, setSyncingId] = useState<string | null>(null);
+  const t = useT();
+  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [filterCategory, setFilterCategory] = useState('All');
+  const [isLoading, setIsLoading] = useState(true);
+  const [isReloading, setIsReloading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const datasets = [
-    ...PUBLIC_DATASETS,
-    {
-      id: 'maha-gis-ward-cadastre',
-      code: 'MAHA-GIS-CADASTRE-2024',
-      name: 'Maharashtra Remote Sensing Application Centre (MRSAC) Cadastre',
-      agency: 'MRSAC Nagpur / Urban Development Dept',
-      recordsCount: 8900,
-      lastUpdated: '3h ago',
-      matchAccuracy: '99.8% Match Acc',
-      status: 'Verified Live' as const,
-      vectorHash: '8a12..99',
-      description: 'Dharashiv district municipal ward polygons, land parcel numbers, and public right-of-way easement corridors.',
-      category: 'GIS & Municipal Land',
-    },
-    {
-      id: 'udise-infra-2023',
-      code: 'UDISE-PLUS-DHA-2023',
-      name: 'Unified District Information System for Education (UDISE+)',
-      agency: 'Ministry of Education',
-      recordsCount: 1420,
-      lastUpdated: '1d ago',
-      matchAccuracy: '96.2% Match Acc',
-      status: 'Verified Live' as const,
-      vectorHash: '1f44..72',
-      description: 'Zilla Parishad school utility records, functional girls/boys sanitation facilities, and drinking water source audits.',
-      category: 'Education Infrastructure',
-    },
-    {
-      id: 'cgwb-groundwater-2024',
-      code: 'CGWB-GW-AQUIFER-MH',
-      name: 'Central Ground Water Board (CGWB) Seasonal Aquifer Monitor',
-      agency: 'CGWB / Ministry of Jal Shakti',
-      recordsCount: 680,
-      lastUpdated: '5d ago',
-      matchAccuracy: '95.0% Match Acc',
-      status: 'Verified Live' as const,
-      vectorHash: '5e09..33',
-      description: 'Pre-monsoon and post-monsoon water table depth telemetry across Marathwada basalt fracture zones.',
-      category: 'Water Infrastructure',
-    },
-  ];
-
-  const handleSync = (id: string, name: string) => {
-    setSyncingId(id);
-    setTimeout(() => {
-      setSyncingId(null);
-      onShowToast('Dataset Synchronized', `Pulled latest API updates for ${name}. Vector embeddings refreshed.`);
-    }, 1200);
+  const reloadCatalog = async (announce = false) => {
+    if (announce) setIsReloading(true);
+    try {
+      const result = await fetchDatasetsApi();
+      setDatasets(result);
+      setError(null);
+      if (announce) onShowToast('Catalog refreshed', `${result.length} stored dataset records loaded.`);
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'The dataset catalog could not be loaded.');
+    } finally {
+      setIsLoading(false);
+      setIsReloading(false);
+    }
   };
 
-  const filtered = datasets.filter((d) => {
+  useEffect(() => {
+    void reloadCatalog();
+  }, []);
+
+  const filtered = datasets.filter((dataset) => {
     if (filterCategory === 'All') return true;
-    return d.category.toLowerCase().includes(filterCategory.toLowerCase());
+    return dataset.category.toLowerCase().includes(filterCategory.toLowerCase());
   });
 
   return (
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
-      <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
-            <span className="material-symbols-outlined text-[16px]">layers</span>
-            <span>Open Government Data Grounding Store</span>
-          </div>
-          <h1 className="text-[24px] font-bold text-[#0b1c30] tracking-tight mt-0.5">
-            Public Data Sources &amp; Vector Registries
-          </h1>
-          <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
-            All civic complaints are reconciled strictly against authenticated open governmental feeds.
-            Zero synthetic data imputation is permitted in our RAG pipeline.
+          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">{t('Public data catalog')}</p>
+          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('Data sources')}</h1>
+          <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
+            {t('Dataset metadata currently stored by this prototype. Availability here does not imply a live upstream feed.')}
           </p>
         </div>
+        <button
+          type="button"
+          onClick={() => void reloadCatalog(true)}
+          disabled={isReloading}
+          className="inline-flex items-center gap-2 self-start border border-[#006a61] px-4 py-2 text-[13px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:cursor-wait disabled:opacity-50 md:self-auto"
+        >
+          <span className={`material-symbols-outlined text-[18px] ${isReloading ? 'animate-spin' : ''}`}>refresh</span>
+          <span>{isReloading ? t('Loading...') : t('Reload catalog')}</span>
+        </button>
+      </header>
 
-        <div className="flex items-center gap-2">
+      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter datasets by category">
+        {categories.map((category) => (
           <button
+            key={category}
             type="button"
-            onClick={() => onShowToast('Full Re-sync Started', 'Scanning 14 ministerial endpoints...')}
-            className="px-4 py-2 rounded-lg bg-[#000000] text-[#ffffff] text-[13px] font-semibold hover:bg-[#213145] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer"
+            aria-pressed={filterCategory === category}
+            onClick={() => setFilterCategory(category)}
+            className={`border px-3 py-1.5 text-[12px] font-semibold ${filterCategory === category ? 'border-[#006a61] bg-[#e7f5f1] text-[#005049]' : 'border-[#dce9ff] text-[#45464d] hover:bg-[#eff4ff]'}`}
           >
-            <span className="material-symbols-outlined text-[18px]">sync</span>
-            <span>Sync All Catalogs</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        {['All', 'Water', 'Roads', 'Healthcare', 'GIS', 'Education'].map((cat) => (
-          <button
-            key={cat}
-            type="button"
-            onClick={() => setFilterCategory(cat)}
-            className={`px-3.5 py-1.5 rounded-lg text-[12px] font-semibold transition-colors shrink-0 ${
-              filterCategory === cat
-                ? 'bg-[#131b2e] text-[#ffffff]'
-                : 'bg-[#eff4ff] text-[#45464d] hover:bg-[#dce9ff] border border-[#dce9ff]'
-            }`}
-          >
-            {cat} {cat === 'All' ? `(${datasets.length})` : ''}
+            {t(category)}{category === 'All' ? ` (${datasets.length})` : ''}
           </button>
         ))}
       </div>
 
-      {/* Datasets Cards Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {filtered.map((ds) => (
-          <div
-            key={ds.id}
-            className="bg-[#ffffff] rounded-xl p-5 shadow-xs border border-[#e5eeff] flex flex-col justify-between gap-4 hover:shadow-md transition-shadow"
-          >
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-[#eff4ff] text-[#0b1c30] font-semibold border border-[#dce9ff]">
-                  {ds.code}
-                </span>
-                <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-mono text-[11px] font-semibold">
-                  {ds.matchAccuracy}
-                </span>
-              </div>
+      {isLoading && <p className="text-[13px] text-[#45464d]">{t('Loading stored datasets...')}</p>}
+      {error && <p role="alert" className="border-l-2 border-[#ba1a1a] pl-3 text-[13px] text-[#93000a]">{error}</p>}
+      {!isLoading && !error && datasets.length === 0 && (
+        <p className="border-y border-[#dce9ff] py-5 text-[13px] text-[#45464d]">{t('No datasets are currently registered.')}</p>
+      )}
 
-              <h2 className="font-bold text-[16px] text-[#0b1c30] leading-snug">{ds.name}</h2>
-              <p className="text-[12px] text-[#76777d]">{ds.agency}</p>
-              <p className="text-[13px] text-[#45464d] leading-relaxed pt-1">{ds.description}</p>
+      <section className="grid grid-cols-1 gap-x-8 md:grid-cols-2" aria-label="Registered datasets">
+        {filtered.map((dataset) => (
+          <article key={dataset.id} className="space-y-3 border-y border-[#dce9ff] py-4">
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-mono text-[11px] text-[#006a61]">{dataset.dataset_identifier}</p>
+                <h2 className="mt-1 text-[15px] font-semibold text-[#0b1c30]">{dataset.name}</h2>
+              </div>
+              <span className="border border-[#dce9ff] px-2 py-1 font-mono text-[10px] text-[#45464d]">
+                {dataset.ingestion_status}
+              </span>
             </div>
-
-            <div className="space-y-2.5 pt-3 border-t border-[#eff4ff]">
-              <div className="flex items-center justify-between text-[11px] font-mono text-[#76777d]">
-                <span>Records: <strong>{ds.recordsCount.toLocaleString()}</strong></span>
-                <span>Hash: {ds.vectorHash}</span>
-              </div>
-
-              <div className="flex items-center justify-between gap-2">
-                <span className="text-[11px] text-[#006a61] font-semibold flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#006a61]"></span>
-                  Updated {ds.lastUpdated}
-                </span>
-
-                <button
-                  type="button"
-                  disabled={syncingId === ds.id}
-                  onClick={() => handleSync(ds.id, ds.name)}
-                  className="px-2.5 py-1 rounded bg-[#eff4ff] hover:bg-[#dce9ff] text-[#0b1c30] text-[11px] font-semibold transition-colors flex items-center gap-1 border border-[#dce9ff] cursor-pointer"
-                >
-                  <span className={`material-symbols-outlined text-[14px] ${syncingId === ds.id ? 'animate-spin' : ''}`}>
-                    sync
-                  </span>
-                  <span>{syncingId === ds.id ? 'Syncing...' : 'Sync Now'}</span>
-                </button>
-              </div>
-            </div>
-          </div>
+            <p className="text-[12px] text-[#45464d]">{dataset.organization} · {dataset.category}</p>
+            {dataset.description && <p className="text-[13px] leading-relaxed text-[#45464d]">{dataset.description}</p>}
+            <dl className="grid grid-cols-2 gap-3 border-t border-[#eff4ff] pt-3 text-[11px]">
+              <div><dt className="text-[#76777d]">Records</dt><dd className="font-mono text-[#0b1c30]">{dataset.record_count.toLocaleString()}</dd></div>
+              <div><dt className="text-[#76777d]">Verification</dt><dd className="text-[#0b1c30]">{dataset.verification_status}</dd></div>
+              <div><dt className="text-[#76777d]">Geographic scope</dt><dd className="text-[#0b1c30]">{dataset.geographic_scope || 'Not specified'}</dd></div>
+              <div><dt className="text-[#76777d]">Reporting period</dt><dd className="text-[#0b1c30]">{dataset.time_period || 'Not specified'}</dd></div>
+            </dl>
+            {dataset.source_url && (
+                <a href={dataset.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#005049] underline">
+                <span>{t('Open source')}</span><span className="material-symbols-outlined text-[14px]">open_in_new</span>
+              </a>
+            )}
+          </article>
         ))}
-      </div>
+      </section>
     </div>
   );
 };

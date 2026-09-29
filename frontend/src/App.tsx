@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { NavigationTab, UserRole, AppLanguage, CitizenReport } from './types';
 import { INITIAL_REPORTS } from './data/mockData';
 import { Sidebar } from './components/Sidebar';
@@ -24,16 +24,32 @@ import { HowItWorksView } from './components/views/HowItWorksView';
 import { TechArchitectureView } from './components/views/TechArchitectureView';
 import { SystemMonitoringView } from './components/views/SystemMonitoringView';
 import { SettingsView } from './components/views/SettingsView';
+import { createCitizenRequestApi, CitizenRequestInput, CitizenRequestRecord } from './api/requests';
+import { LanguageContext, LocalizedTree } from './i18n';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
   const [activeRole, setActiveRole] = useState<UserRole>('Analyst');
-  const [language, setLanguage] = useState<AppLanguage>('EN');
+  const [language, setLanguage] = useState<AppLanguage>(() => {
+    const savedLanguage = localStorage.getItem('nagriklens_language');
+    return savedLanguage === 'HI' || savedLanguage === 'GU' ? savedLanguage : 'EN';
+  });
   const [reports, setReports] = useState<CitizenReport[]>(INITIAL_REPORTS);
+  const [citizenRequests, setCitizenRequests] = useState<CitizenRequestRecord[]>([]);
   const [selectedReport, setSelectedReport] = useState<CitizenReport>(INITIAL_REPORTS[0]);
   const [isReportModalOpen, setIsReportModalOpen] = useState<boolean>(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState<boolean>(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+
+  useEffect(() => {
+    document.documentElement.lang = language === 'HI' ? 'hi' : language === 'GU' ? 'gu' : 'en';
+    localStorage.setItem('nagriklens_language', language);
+  }, [language]);
+
+  const handleLanguageChange = (nextLanguage: AppLanguage) => {
+    setLanguage(nextLanguage);
+    localStorage.setItem('nagriklens_language', nextLanguage);
+  };
 
   const showToast = (title: string, desc: string, type: 'success' | 'info' | 'warning' = 'info') => {
     const id = Date.now().toString();
@@ -76,7 +92,14 @@ export default function App() {
     );
   };
 
+  const handleCreateCitizenRequest = async (input: CitizenRequestInput) => {
+    const created = await createCitizenRequestApi(input);
+    setCitizenRequests((current) => [created, ...current]);
+    return created;
+  };
+
   return (
+    <LanguageContext.Provider value={language}>
     <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex">
       {/* Sidebar Navigation */}
       <Sidebar
@@ -96,7 +119,7 @@ export default function App() {
         {/* Global Header */}
         <Header
           language={language}
-          onLanguageChange={setLanguage}
+          onLanguageChange={handleLanguageChange}
           onNavigate={(tab) => {
             setCurrentTab(tab);
             window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -107,6 +130,7 @@ export default function App() {
 
         {/* Dynamic View Content */}
         <main className="w-full pt-16 flex-1 flex flex-col">
+          <LocalizedTree>
           {currentTab === 'dashboard' && (
             <DashboardView
               reports={reports}
@@ -126,7 +150,7 @@ export default function App() {
                 setCurrentTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
-              onSubmitReport={handleAddNewReport}
+              onSubmitRequest={handleCreateCitizenRequest}
               onShowToast={showToast}
             />
           )}
@@ -163,6 +187,7 @@ export default function App() {
           {currentTab === 'my-reports' && (
             <MyReportsView
               reports={reports}
+              requests={citizenRequests}
               onNavigate={(tab) => {
                 setCurrentTab(tab);
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -190,12 +215,13 @@ export default function App() {
           {currentTab === 'settings' && (
             <SettingsView
               language={language}
-              onLanguageChange={setLanguage}
+              onLanguageChange={handleLanguageChange}
               activeRole={activeRole}
               onRoleChange={setActiveRole}
               onShowToast={showToast}
             />
           )}
+          </LocalizedTree>
         </main>
       </div>
 
@@ -209,5 +235,6 @@ export default function App() {
       {/* Global Toast Notification */}
       <Toast toast={toast} onClose={() => setToast(null)} />
     </div>
+    </LanguageContext.Provider>
   );
 }

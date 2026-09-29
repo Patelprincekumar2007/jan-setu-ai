@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 import numpy as np
 from pathlib import Path
@@ -10,6 +11,7 @@ class VectorStore:
     def __init__(self):
         self.dimension = 384
         self.index_path = Path(settings.FAISS_INDEX_PATH)
+        self.metadata_path = Path(f"{self.index_path}.ids.json")
         self.index_path.parent.mkdir(parents=True, exist_ok=True)
         self._faiss = None
         self._index = None
@@ -22,6 +24,12 @@ class VectorStore:
                 self._faiss = faiss
                 if self.index_path.exists():
                     self._index = faiss.read_index(str(self.index_path))
+                    if self.metadata_path.exists():
+                        self.id_to_evidence_id = json.loads(
+                            self.metadata_path.read_text(encoding="utf-8")
+                        )
+                    if len(self.id_to_evidence_id) != self._index.ntotal:
+                        self.id_to_evidence_id = []
                     logger.info(f"Loaded existing FAISS index from {self.index_path}")
                 else:
                     self._index = faiss.IndexFlatIP(self.dimension)
@@ -74,6 +82,10 @@ class VectorStore:
         if self._faiss not in (None, "FALLBACK") and self._index is not None:
             try:
                 self._faiss.write_index(self._index, str(self.index_path))
+                self.metadata_path.write_text(
+                    json.dumps(self.id_to_evidence_id),
+                    encoding="utf-8",
+                )
             except Exception as e:
                 logger.error(f"Failed to save FAISS index: {e}")
 

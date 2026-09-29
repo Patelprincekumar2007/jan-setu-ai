@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppLanguage, UserRole } from '../../types';
 import { ASSETS } from '../../data/mockData';
+import { useT } from '../../i18n';
 
 interface SettingsViewProps {
   language: AppLanguage;
@@ -17,18 +18,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onRoleChange,
   onShowToast,
 }) => {
+  const t = useT();
   return (
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
       <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-2">
         <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
           <span className="material-symbols-outlined text-[16px]">settings</span>
-          <span>Preferences &amp; User Configuration</span>
+          <span>{t('Preferences & User Configuration')}</span>
         </div>
         <h1 className="text-[26px] font-bold text-[#0b1c30] tracking-tight">
-          Platform Settings
+          {t('Platform Settings')}
         </h1>
         <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
-          Configure interface language, active access tier, telemetry alerts, and statutory data export formats.
+          {t('Configure interface language, active access tier, telemetry alerts, and statutory data export formats.')}
         </p>
       </div>
 
@@ -36,7 +38,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         {/* User Profile Card */}
         <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-4">
           <h2 className="font-bold text-[16px] text-[#0b1c30] pb-2 border-b border-[#eff4ff]">
-            Researcher Identity &amp; Credentials
+            {t('Researcher Identity & Credentials')}
           </h2>
           <div className="flex items-center gap-4">
             <img
@@ -57,7 +59,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 
           <div className="space-y-2 pt-2">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-              Active Operational Role
+              {t('Active Operational Role')}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {(['Citizen', 'Analyst', 'Admin'] as UserRole[]).map((role) => (
@@ -74,7 +76,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                       : 'bg-[#eff4ff] text-[#45464d] hover:bg-[#dce9ff] border border-[#dce9ff]'
                   }`}
                 >
-                  {role} View
+                  {t(role)} {t('View')}
                 </button>
               ))}
             </div>
@@ -84,25 +86,25 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
         {/* Language & Accessibility */}
         <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-4">
           <h2 className="font-bold text-[16px] text-[#0b1c30] pb-2 border-b border-[#eff4ff]">
-            Language &amp; Multi-Dialect Preference
+            {t('Language & Multi-Dialect Preference')}
           </h2>
 
           <div className="space-y-2">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-              Default Regional Language
+              {t('Default Regional Language')}
             </label>
             <div className="grid grid-cols-3 gap-2">
               {[
-                { code: 'EN' as AppLanguage, label: 'English (EN)' },
-                { code: 'HI' as AppLanguage, label: 'हिन्दी (Hindi)' },
-                { code: 'GU' as AppLanguage, label: 'ગુજરાતી (Gujarati)' },
+                { code: 'EN' as AppLanguage, label: `${t('English')} (EN)` },
+                { code: 'HI' as AppLanguage, label: `${t('Hindi')} (Hindi)` },
+                { code: 'GU' as AppLanguage, label: `${t('Gujarati')} (Gujarati)` },
               ].map((item) => (
                 <button
                   key={item.code}
                   type="button"
                   onClick={() => {
                     onLanguageChange(item.code);
-                    onShowToast('Language Updated', `Active display language set to ${item.label}.`);
+                    onShowToast(t('Language Updated'), `${t('Language')}: ${item.label}.`);
                   }}
                   className={`py-2 px-3 rounded-lg text-[13px] font-semibold transition-colors ${
                     language === item.code

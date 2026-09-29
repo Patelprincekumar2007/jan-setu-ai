@@ -20,12 +20,37 @@ class GeminiService:
     def is_configured(self) -> bool:
         return self._client is not None
 
-    def understand_complaint(self, original_narrative: str, category: str, state: str, district: str, locality: str = None) -> Dict[str, Any]:
-        """
-        Uses Gemini to extract structured JSON from citizen complaint narrative.
-        """
+    def generate_grounded_analysis_json(self, system_instruction: str, user_data: Dict[str, Any]) -> str:
         if not self._client:
-            # Fallback structured extraction if Gemini key is not configured
+            raise RuntimeError("Gemini is not configured")
+        try:
+            from google.genai import types
+
+            response = self._client.models.generate_content(
+                model=settings.GEMINI_MODEL,
+                contents=json.dumps(user_data, ensure_ascii=False),
+                config=types.GenerateContentConfig(
+                    system_instruction=system_instruction,
+                    response_mime_type="application/json",
+                ),
+            )
+            if not response.text:
+                raise ValueError("Gemini returned an empty response")
+            return response.text
+        except Exception as error:
+            logger.warning("Grounded Gemini analysis failed.")
+            raise RuntimeError("Grounded analysis could not be generated") from error
+
+    def understand_complaint(self, original_narrative: str, category: str, state: str, district: str, locality: str = None) -> Dict[str, Any]:
+        result, _ = self.understand_complaint_with_status(
+            original_narrative, category, state, district, locality
+        )
+        return result
+
+    def understand_complaint_with_status(
+        self, original_narrative: str, category: str, state: str, district: str, locality: str = None
+    ) -> tuple[Dict[str, Any], str]:
+        def fallback() -> Dict[str, Any]:
             return {
                 "problem_summary": original_narrative[:200] + ("..." if len(original_narrative) > 200 else ""),
                 "category": category,
@@ -37,6 +62,9 @@ class GeminiService:
                 "key_entities": [category, district, state],
                 "evidence_requirements": [f"Public data regarding {category} in {district}, {state}"]
             }
+
+        if not self._client:
+            return fallback(), "FALLBACK"
 
         prompt = f"""
         You are a civic intelligence AI assistant for NagrikLens AI.
@@ -61,7 +89,7 @@ class GeminiService:
         """
         try:
             response = self._client.models.generate_content(
-                model='gemini-2.5-flash',
+                model=settings.GEMINI_MODEL,
                 contents=prompt
             )
             text = response.text.strip()
@@ -71,20 +99,13 @@ class GeminiService:
                 text = text[3:]
             if text.endswith("```"):
                 text = text[:-3]
-            return json.loads(text.strip())
-        except Exception as e:
-            logger.error(f"Gemini structured extraction failed: {e}")
-            return {
-                "problem_summary": original_narrative[:200],
-                "category": category,
-                "problem_type": category,
-                "severity": "medium",
-                "affected_group": "Community",
-                "reported_impact": original_narrative,
-                "location_mentions": [district, state],
-                "key_entities": [category],
-                "evidence_requirements": [f"{category} records for {district}"]
-            }
+            result = json.loads(text.strip())
+            if not isinstance(result, dict):
+                raise ValueError("Gemini extraction must be a JSON object")
+            return result, "COMPLETED"
+        except Exception:
+            logger.warning("Gemini structured extraction failed; using local fallback.")
+            return fallback(), "FAILED"
 
     def generate_grounded_analysis(self, report_narrative: str, structured_report: Dict[str, Any], retrieved_evidence: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -161,7 +182,7 @@ class GeminiService:
         """
         try:
             response = self._client.models.generate_content(
-                model='gemini-2.5-flash',
+                model=settings.GEMINI_MODEL,
                 contents=prompt
             )
             text = response.text.strip()

@@ -1,6 +1,7 @@
 import React from 'react';
 import { PIPELINE_STEPS } from '../../data/mockData';
 import { NavigationTab } from '../../types';
+import { LocalizedTree } from '../../i18n';
 
 interface HowItWorksViewProps {
   onNavigate: (tab: NavigationTab) => void;
@@ -8,6 +9,7 @@ interface HowItWorksViewProps {
 
 export const HowItWorksView: React.FC<HowItWorksViewProps> = ({ onNavigate }) => {
   return (
+    <LocalizedTree>
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
       <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-2">
         <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
@@ -106,5 +108,6 @@ export const HowItWorksView: React.FC<HowItWorksViewProps> = ({ onNavigate }) =>
         </button>
       </div>
     </div>
+    </LocalizedTree>
   );
 };

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { CitizenReport } from '../types';
+import { useT } from '../i18n';
 
 interface ReportModalProps {
   isOpen: boolean;
@@ -8,6 +9,7 @@ interface ReportModalProps {
 }
 
 export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSubmit }) => {
+  const t = useT();
   const [category, setCategory] = useState<'Water' | 'Roads' | 'Healthcare' | 'Electricity' | 'Sanitation'>('Water');
   const [location, setLocation] = useState('Dharashiv Ward 4, Near Primary Health Centre');
   const [narrative, setNarrative] = useState('');
@@ -49,7 +51,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSub
               add_alert
             </span>
             <h2 className="font-semibold text-[20px] text-[#0b1c30]">
-              File New Community Telemetry
+              {t('File New Community Telemetry')}
             </h2>
           </div>
           <button
@@ -62,35 +64,34 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSub
         </div>
 
         <p className="text-[13px] text-[#45464d] leading-relaxed">
-          Provide infrastructure details in any language. The NagrikLens pipeline will structure
-          entities and pull matching OGD public data.
+          {t('Provide infrastructure details in any language. The NagrikLens pipeline will structure entities and pull matching OGD public data.')}
         </p>
 
         <form className="flex flex-col gap-3.5" onSubmit={handleSubmit}>
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-              Incident Category
+              {t('Incident Category')}
             </label>
             <select
               className="bg-[#eff4ff] text-[#0b1c30] text-[14px] rounded p-2 outline-none border border-[#dce9ff] focus:border-[#006a61]"
               value={category}
               onChange={(e) => setCategory(e.target.value as any)}
             >
-              <option value="Water">Water Infrastructure (Leakage, Dry Borewell, Contamination)</option>
-              <option value="Roads">Roads &amp; Transport (Pothole, Subsidence, Culvert)</option>
-              <option value="Electricity">Electricity &amp; Microgrid (Outage, Line Sag)</option>
-              <option value="Sanitation">Public Sanitation &amp; Solid Waste Drainage</option>
-              <option value="Healthcare">Healthcare Facilities (Equipment, Water, Cold Storage)</option>
+              <option value="Water">{t('Water Infrastructure (Leakage, Dry Borewell, Contamination)')}</option>
+              <option value="Roads">{t('Roads & Transport (Pothole, Subsidence, Culvert)')}</option>
+              <option value="Electricity">{t('Electricity & Microgrid (Outage, Line Sag)')}</option>
+              <option value="Sanitation">{t('Public Sanitation & Solid Waste Drainage')}</option>
+              <option value="Healthcare">{t('Healthcare Facilities (Equipment, Water, Cold Storage)')}</option>
             </select>
           </div>
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-              Ward / Location Identifier
+              {t('Ward / Location Identifier')}
             </label>
             <input
               className="bg-[#eff4ff] text-[#0b1c30] text-[14px] rounded p-2 outline-none border border-[#dce9ff] focus:border-[#006a61]"
-              placeholder="e.g., Dharashiv Ward 4, Near Primary Health Centre"
+              placeholder={t('e.g., Dharashiv Ward 4, Near Primary Health Centre')}
               required
               type="text"
               value={location}
@@ -100,11 +101,11 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSub
 
           <div className="flex flex-col gap-1">
             <label className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-              Problem Narrative
+              {t('Problem Narrative')}
             </label>
             <textarea
               className="bg-[#eff4ff] text-[#0b1c30] text-[14px] rounded p-2 outline-none border border-[#dce9ff] focus:border-[#006a61]"
-              placeholder="Describe the physical observation (supports English, हिन्दी, मराठी, ગુજરાતી)..."
+              placeholder={t('Describe the physical observation (supports English, हिन्दी, मराठी, ગુજરાતી)...')}
               required
               rows={4}
               value={narrative}
@@ -113,7 +114,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSub
           </div>
 
           <div className="p-2 rounded bg-[#eff4ff] border border-[#dce9ff] flex items-center justify-between font-mono text-[11px] text-[#45464d]">
-            <span>Targeting vector database:</span>
+            <span>{t('Targeting vector database:')}</span>
             <span className="text-[#006a61] font-semibold">OGD-MahaGIS-2024 / FAISS v2.4</span>
           </div>
 
@@ -123,7 +124,7 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSub
               onClick={onClose}
               type="button"
             >
-              Cancel
+              {t('Cancel')}
             </button>
             <button
               className="px-4 py-2 rounded bg-[#006a61] text-[#ffffff] text-[13px] font-semibold hover:bg-[#005049] transition-colors shadow-sm flex items-center gap-1.5"
@@ -135,14 +136,14 @@ export const ReportModal: React.FC<ReportModalProps> = ({ isOpen, onClose, onSub
                   <span className="material-symbols-outlined text-[16px] animate-spin">
                     sync
                   </span>
-                  <span>Extracting Entities...</span>
+                  <span>{t('Extracting Entities...')}</span>
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[16px]">
                     verified
                   </span>
-                  <span>Submit &amp; Run RAG Extraction</span>
+                  <span>{t('Submit & Run RAG Extraction')}</span>
                 </>
               )}
             </button>
