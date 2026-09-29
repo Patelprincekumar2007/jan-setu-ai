@@ -189,6 +189,18 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
         </div>
       </div>
 
+      <figure className="flex flex-col overflow-hidden border border-[#dce9ff] bg-white sm:flex-row">
+        <img
+          src={ASSETS.phcClinicFacade}
+          alt="Illustrative photograph of a community health facility"
+          loading="lazy"
+          className="h-32 w-full object-cover sm:h-28 sm:w-64"
+        />
+        <figcaption className="flex items-center px-4 py-3 text-[12px] text-[#45464d]">
+          Illustrative image only. It is not a photograph of a submitted request location.
+        </figcaption>
+      </figure>
+
       {/* Main Two-Column Civic Form */}
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* Left Column: Problem Input & Impact (7 cols) */}
