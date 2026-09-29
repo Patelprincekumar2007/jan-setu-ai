@@ -1,0 +1,6 @@
+{
+  "name": "NagrikLens AI - Civic Intelligence Platform",
+  "description": "An auditable, evidence-grounded civic intelligence platform transforming community infrastructure grievances into legally verifiable municipal interventions.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
