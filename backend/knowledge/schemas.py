@@ -74,6 +74,27 @@ class SemanticKnowledgeSearchResponse(BaseModel):
     results: List[SemanticKnowledgeEvidenceResponse]
 
 
+class HybridKnowledgeEvidenceResponse(KnowledgeEvidenceResponse):
+    similarity_score: float = 0.0
+    metadata_match_level: int = 0
+    retrieval_method: Literal["hybrid", "semantic", "metadata"] = "hybrid"
+
+
+class HybridKnowledgeSearchFilters(BaseModel):
+    state: Optional[str] = None
+    district: Optional[str] = None
+    category: Optional[str] = None
+
+
+class HybridKnowledgeSearchResponse(BaseModel):
+    query: str
+    retriever: str = "hybrid"
+    top_k: int
+    result_count: int
+    filters: HybridKnowledgeSearchFilters
+    results: List[HybridKnowledgeEvidenceResponse]
+
+
 class KnowledgeDatasetSummaryResponse(BaseModel):
     dataset_id: str
     title: str

@@ -1,0 +1,13 @@
+{
+  "dataset_id": "ds-jjm-water-coverage-2024",
+  "title": "District-wise Rural Household Tap Water Coverage",
+  "description": "Baseline rural household tap water supply coverage percentage under Jal Jeevan Mission across Indian districts.",
+  "source_name": "Open Government Data Platform India / Ministry of Jal Shakti",
+  "source_url": "https://data.gov.in/resource/district-wise-rural-drinking-water-supply-and-tap-connections",
+  "publisher": "Department of Drinking Water and Sanitation, Ministry of Jal Shakti",
+  "data_type": "tabular",
+  "geographic_scope": "National",
+  "update_frequency": "Annual",
+  "last_updated": "2024-Q3",
+  "license": "Open Government Data License - India"
+}

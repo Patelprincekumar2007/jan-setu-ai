@@ -1,0 +1,26 @@
+state,district,locality,category,metric_name,tap_water_coverage_pct,unit,year,period,source_reference,notes
+Bihar,Gaya,,Water,Rural Household Tap Water Coverage (%),92.4,%,2024,2024-Q3,OGD-JJM-2024-BR-01,Har Ghar Nal Ka Jal baseline
+Bihar,Patna,,Water,Rural Household Tap Water Coverage (%),96.1,%,2024,2024-Q3,OGD-JJM-2024-BR-02,High saturation district
+Gujarat,Ahmedabad,,Water,Rural Household Tap Water Coverage (%),100.0,%,2024,2024-Q3,OGD-JJM-2024-GJ-01,100% Har Ghar Jal certified
+Gujarat,Rajkot,,Water,Rural Household Tap Water Coverage (%),98.5,%,2024,2024-Q3,OGD-JJM-2024-GJ-02,Saurashtra region baseline
+Karnataka,Bangalore Rural,,Water,Rural Household Tap Water Coverage (%),88.2,%,2024,2024-Q3,OGD-JJM-2024-KA-01,Peri-urban rural coverage
+Karnataka,Belagavi,,Water,Rural Household Tap Water Coverage (%),76.4,%,2024,2024-Q3,OGD-JJM-2024-KA-02,North Karnataka baseline
+Karnataka,Kalaburagi,,Water,Rural Household Tap Water Coverage (%),64.1,%,2024,2024-Q3,OGD-JJM-2024-KA-03,Kalyana Karnataka drought prone
+Maharashtra,Dharashiv,,Water,Rural Household Tap Water Coverage (%),50.76,%,2024,2024-Q3,OGD-JJM-2024-MH-01,Marathwada dry zone critical baseline
+Maharashtra,Pune,,Water,Rural Household Tap Water Coverage (%),84.5,%,2024,2024-Q3,OGD-JJM-2024-MH-02,Western Maharashtra baseline
+Maharashtra,Nashik,,Water,Rural Household Tap Water Coverage (%),72.3,%,2024,2024-Q3,OGD-JJM-2024-MH-03,North Maharashtra tribal belt
+Maharashtra,Nagpur,,Water,Rural Household Tap Water Coverage (%),89.1,%,2024,2024-Q3,OGD-JJM-2024-MH-04,Vidarbha regional hub
+Maharashtra,Nanded,,Water,Rural Household Tap Water Coverage (%),58.2,%,2024,2024-Q3,OGD-JJM-2024-MH-05,Marathwada eastern zone
+Madhya Pradesh,Bhopal,,Water,Rural Household Tap Water Coverage (%),68.4,%,2024,2024-Q3,OGD-JJM-2024-MP-01,Central MP baseline
+Madhya Pradesh,Indore,,Water,Rural Household Tap Water Coverage (%),74.9,%,2024,2024-Q3,OGD-JJM-2024-MP-02,Malwa plateau baseline
+Odisha,Cuttack,,Water,Rural Household Tap Water Coverage (%),71.8,%,2024,2024-Q3,OGD-JJM-2024-OD-01,Coastal Odisha baseline
+Odisha,Khordha,,Water,Rural Household Tap Water Coverage (%),79.3,%,2024,2024-Q3,OGD-JJM-2024-OD-02,Capital district coverage
+Rajasthan,Jaipur,,Water,Rural Household Tap Water Coverage (%),48.2,%,2024,2024-Q3,OGD-JJM-2024-RJ-01,Eastern Rajasthan arid zone
+Rajasthan,Jodhpur,,Water,Rural Household Tap Water Coverage (%),42.1,%,2024,2024-Q3,OGD-JJM-2024-RJ-02,Thar desert transition zone
+Tamil Nadu,Chennai,,Water,Rural Household Tap Water Coverage (%),99.1,%,2024,2024-Q3,OGD-JJM-2024-TN-01,Metro periphery coverage
+Tamil Nadu,Coimbatore,,Water,Rural Household Tap Water Coverage (%),94.3,%,2024,2024-Q3,OGD-JJM-2024-TN-02,Western TN baseline
+Uttar Pradesh,Varanasi,,Water,Rural Household Tap Water Coverage (%),81.2,%,2024,2024-Q3,OGD-JJM-2024-UP-01,Purvanchal baseline
+Uttar Pradesh,Lucknow,,Water,Rural Household Tap Water Coverage (%),78.5,%,2024,2024-Q3,OGD-JJM-2024-UP-02,Central UP baseline
+Uttar Pradesh,Gorakhpur,,Water,Rural Household Tap Water Coverage (%),85.7,%,2024,2024-Q3,OGD-JJM-2024-UP-03,Eastern UP plains
+West Bengal,Kolkata,,Water,Rural Household Tap Water Coverage (%),92.0,%,2024,2024-Q3,OGD-JJM-2024-WB-01,Gangetic delta peri-urban
+West Bengal,Darjeeling,,Water,Rural Household Tap Water Coverage (%),55.4,%,2024,2024-Q3,OGD-JJM-2024-WB-02,Himalayan hill terrain baseline

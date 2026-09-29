@@ -8,12 +8,14 @@ from backend.knowledge.schemas import (
     KnowledgeDatasetSummaryResponse,
     SemanticKnowledgeSearchResponse,
     SemanticKnowledgeEvidenceResponse,
+    HybridKnowledgeSearchResponse,
 )
 from backend.knowledge.retriever import (
     DeterministicMetadataRetriever,
     SemanticFAISSRetriever,
     semantic_search,
 )
+from backend.knowledge.hybrid_retriever import hybrid_search
 from backend.knowledge.service import KnowledgeService
 from backend.knowledge.vector_index import get_vector_index_status, VectorIndexUnavailableException
 
@@ -32,7 +34,6 @@ def search_knowledge_evidence(
     """
     Deterministic Baseline Metadata Retrieval Endpoint.
     Retrieves grounded KnowledgeEvidence records matching query terms and administrative filters.
-    Contract is prepared for seamless drop-in of future vector retrievers.
     """
     retriever = DeterministicMetadataRetriever(db)
     try:
@@ -62,7 +63,8 @@ def get_knowledge_status(db: Session = Depends(get_db)):
     status_info = get_vector_index_status(db)
     return {
         "baseline_metadata": {"available": True},
-        "semantic_faiss": status_info
+        "semantic_faiss": status_info,
+        "hybrid": {"available": True, "ranking": "metadata_match_level -> similarity_score -> evidence_id"},
     }
 
 
@@ -98,6 +100,40 @@ def semantic_search_knowledge_evidence(
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail=str(e),
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Internal server error: {e}")
+
+
+@router.get("/hybrid-search", response_model=HybridKnowledgeSearchResponse, status_code=status.HTTP_200_OK)
+def hybrid_search_knowledge_evidence(
+    q: str = Query(..., description="Search query string"),
+    state: Optional[str] = Query(None, description="Filter by state name"),
+    district: Optional[str] = Query(None, description="Filter by district name"),
+    category: Optional[str] = Query(None, description="Filter by civic sector category"),
+    top_k: int = Query(5, ge=1, le=20, description="Maximum number of evidence items to return (1-20)"),
+    db: Session = Depends(get_db),
+):
+    """
+    Hybrid Knowledge Retrieval Endpoint.
+    Combines deterministic metadata match strength and semantic FAISS vector similarity.
+    """
+    if not q or not q.strip():
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="query must be a non-empty string.",
+        )
+
+    try:
+        return hybrid_search(
+            db=db,
+            query=q,
+            top_k=top_k,
+            state=state,
+            district=district,
+            category=category,
         )
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
