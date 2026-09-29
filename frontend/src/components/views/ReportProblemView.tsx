@@ -5,13 +5,15 @@ import { submitCitizenRequestApi } from '../../api/reports';
 
 interface ReportProblemViewProps {
   onNavigate: (tab: NavigationTab) => void;
-  onSubmitReport: (report: Partial<CitizenReport>) => void;
+  onSubmitReport?: (report: Partial<CitizenReport>) => void;
+  onSubmitRequest?: (input: any) => Promise<any>;
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
 }
 
 export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
   onNavigate,
   onSubmitReport,
+  onSubmitRequest,
   onShowToast,
 }) => {
   const [narrative, setNarrative] = useState<string>(
@@ -102,7 +104,9 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
         status: 'Active Under Review',
         evidenceFound: true,
       };
-      onSubmitReport(newReport);
+      if (onSubmitReport) {
+        onSubmitReport(newReport);
+      }
       onNavigate('evidence-explorer');
     }
   };
