@@ -1,12 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Info, ExternalLink, Database, X } from 'lucide-react';
-import { PageContainer } from '../components/common/PageContainer';
-import { Table } from '../components/common/Table';
-import type { Column } from '../components/common/Table';
-import { StatusIndicator } from '../components/common/StatusIndicator';
-import type { StatusVariant } from '../components/common/StatusIndicator';
-import { Button } from '../components/common/Button';
-import styles from './DatasetsPage.module.css';
+import { Info, ExternalLink, Database, X, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 
 interface DatasetItem {
   dataset_id: string;
@@ -63,7 +56,7 @@ export const DatasetsPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'records' | 'knowledge'>('records');
   const [isLoadingRecords, setIsLoadingRecords] = useState(false);
   const [knowledgeStatus, setKnowledgeStatus] = useState<any>(null);
-  
+
   // Semantic Search Tester State
   const [testQuery, setTestQuery] = useState('');
   const [semanticResults, setSemanticResults] = useState<any[] | null>(null);
@@ -75,7 +68,7 @@ export const DatasetsPage: React.FC = () => {
       try {
         const [datasetsRes, statusRes] = await Promise.all([
           fetch('/api/datasets'),
-          fetch('/api/knowledge/status')
+          fetch('/api/knowledge/status'),
         ]);
         if (datasetsRes.ok) {
           const data = await datasetsRes.json();
@@ -126,7 +119,7 @@ export const DatasetsPage: React.FC = () => {
   const handleTestSemanticSearch = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!testQuery.trim()) return;
-    
+
     setIsSearchingSemantic(true);
     setSemanticError(null);
     try {
@@ -144,247 +137,95 @@ export const DatasetsPage: React.FC = () => {
     }
   };
 
-  const mapStatusVariant = (status: string): { variant: StatusVariant; label: string } => {
-    switch (status) {
-      case 'INGESTED':
-        return { variant: 'verified', label: 'INGESTED' };
-      case 'FAILED':
-        return { variant: 'error', label: 'FAILED' };
-      default:
-        return { variant: 'planned', label: 'NOT_INGESTED' };
-    }
-  };
-
-  const columns: Column<DatasetItem>[] = [
-    {
-      key: 'title',
-      header: 'Dataset / Registry',
-      render: (row) => (
-        <div>
-          <div className={styles.datasetName}>{row.title}</div>
-          {row.description && <div className={styles.datasetDesc}>{row.description}</div>}
-          {row.source_url && (
-            <a
-              href={row.source_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className={styles.sourceLink}
-            >
-              <span>Source URL</span>
-              <ExternalLink size={11} />
-            </a>
-          )}
-        </div>
-      ),
-      width: '35%',
-    },
-    {
-      key: 'publisher',
-      header: 'Publisher & Source',
-      render: (row) => (
-        <div>
-          <div style={{ fontSize: '12px', fontWeight: 500, color: 'var(--navy-900)' }}>
-            {row.publisher || row.source_name}
-          </div>
-          <span className={styles.sourceBadge}>{row.source_name}</span>
-        </div>
-      ),
-      width: '25%',
-    },
-    {
-      key: 'geographic_scope',
-      header: 'Scope & Type',
-      render: (row) => (
-        <div style={{ fontSize: '12px', color: 'var(--slate-600)' }}>
-          <div>{row.geographic_scope}</div>
-          <div style={{ fontSize: '11px', color: 'var(--slate-400)' }}>{row.data_type}</div>
-        </div>
-      ),
-      width: '15%',
-    },
-    {
-      key: 'license',
-      header: 'License',
-      render: (row) => (
-        <span style={{ fontSize: '11px', color: 'var(--slate-600)', fontFamily: 'var(--font-mono)' }}>
-          {row.license}
-        </span>
-      ),
-      width: '13%',
-    },
-    {
-      key: 'ingestion_status',
-      header: 'Status',
-      render: (row) => {
-        const { variant, label } = mapStatusVariant(row.ingestion_status);
-        return <StatusIndicator status={variant} label={label} />;
-      },
-      width: '12%',
-    },
-  ];
-
-  const recordColumns: Column<PublicRecordItem>[] = [
-    {
-      key: 'state',
-      header: 'State',
-      render: (r) => <span style={{ fontWeight: 600 }}>{r.state}</span>,
-      width: '20%',
-    },
-    {
-      key: 'district',
-      header: 'District',
-      render: (r) => <span>{r.district}</span>,
-      width: '20%',
-    },
-    {
-      key: 'metric_name',
-      header: 'Metric',
-      render: (r) => <span>{r.metric_name}</span>,
-      width: '25%',
-    },
-    {
-      key: 'metric_value',
-      header: 'Value',
-      render: (r) => (
-        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--navy-900)' }}>
-          {r.metric_value} {r.unit || ''}
-        </span>
-      ),
-      width: '15%',
-    },
-    {
-      key: 'source_reference',
-      header: 'Source Row ID',
-      render: (r) => (
-        <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--slate-500)' }}>
-          {r.source_reference}
-        </span>
-      ),
-      width: '20%',
-    },
-  ];
-
-  const evidenceColumns: Column<KnowledgeEvidenceItem>[] = [
-    {
-      key: 'title',
-      header: 'Evidence Title & Grounding Text',
-      render: (e) => (
-        <div>
-          <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--navy-900)' }}>{e.title}</div>
-          <div style={{ fontSize: '12px', color: 'var(--slate-600)', marginTop: '4px', lineHeight: 1.4 }}>
-            {e.content}
-          </div>
-        </div>
-      ),
-      width: '55%',
-    },
-    {
-      key: 'metric_value',
-      header: 'Ground Metric',
-      render: (e) => (
-        <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--navy-900)', fontSize: '13px' }}>
-          {e.metric_value !== null && e.metric_value !== undefined ? `${e.metric_value} ${e.unit || ''}` : 'N/A'}
-        </span>
-      ),
-      width: '18%',
-    },
-    {
-      key: 'source_reference',
-      header: 'Provenance Reference',
-      render: (e) => (
-        <div>
-          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--slate-600)', background: 'var(--slate-100)', padding: '2px 6px', borderRadius: '4px' }}>
-            {e.source_reference}
-          </span>
-        </div>
-      ),
-      width: '27%',
-    },
-  ];
-
   return (
-    <PageContainer
-      title="Public &amp; Government Datasets Catalog"
-      subtitle="Transparent directory of verified open government datasets and baselines used for decision support."
-    >
-      <div className={styles.notice}>
-        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px' }}>
-          <Info size={18} style={{ flexShrink: 0, marginTop: '2px' }} />
-          <div>
-            <strong>Verified Public Data Foundation:</strong> NagrikLens AI grounds analysis exclusively on verified open public datasets published under open licenses (e.g. GODL). Datasets marked <strong>INGESTED</strong> are normalized and stored with direct row-level provenance.
-          </div>
+    <div className="p-6 max-w-7xl mx-auto">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Public Datasets Catalog</h1>
+        <p className="text-slate-500 text-sm mt-1">
+          Transparent directory of verified open government datasets and baselines used for decision support.
+        </p>
+      </div>
+
+      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6 text-sm text-blue-900 flex items-start gap-3">
+        <Info size={18} className="text-blue-600 mt-0.5 shrink-0" />
+        <div>
+          <span className="font-semibold">Verified Public Data Foundation:</span> NagrikLens AI grounds analysis exclusively on verified open public datasets published under open licenses (e.g. GODL). Datasets marked <span className="font-semibold text-emerald-800">INGESTED</span> are normalized and stored with direct row-level provenance.
         </div>
       </div>
 
       {knowledgeStatus && (
-        <div style={{ marginTop: '16px', padding: '16px', background: 'var(--slate-50)', border: '1px solid var(--border-subtle)', borderRadius: '6px', fontSize: '13px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 bg-white border border-slate-200 rounded-lg p-4 mb-6 shadow-sm">
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--slate-700)', marginBottom: '4px' }}>Baseline metadata</div>
-            <div style={{ color: 'var(--green-700)', fontWeight: 500 }}>{knowledgeStatus.baseline_metadata}</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Baseline Metadata</div>
+            <div className="text-sm font-semibold text-emerald-700 mt-1">{knowledgeStatus.baseline_metadata}</div>
           </div>
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--slate-700)', marginBottom: '4px' }}>Semantic FAISS index</div>
-            <div style={{ color: knowledgeStatus.semantic_faiss.available ? 'var(--green-700)' : 'var(--amber-700)', fontWeight: 500 }}>
-              {knowledgeStatus.semantic_faiss.available ? 'Available' : (knowledgeStatus.semantic_faiss.stale ? 'Stale' : 'Not built')}
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Semantic FAISS Index</div>
+            <div className={`text-sm font-semibold mt-1 ${knowledgeStatus.semantic_faiss?.available ? 'text-emerald-700' : 'text-amber-700'}`}>
+              {knowledgeStatus.semantic_faiss?.available ? 'Available' : (knowledgeStatus.semantic_faiss?.stale ? 'Stale' : 'Not built')}
             </div>
           </div>
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--slate-700)', marginBottom: '4px' }}>Evidence count</div>
-            <div style={{ color: 'var(--slate-800)', fontFamily: 'var(--font-mono)' }}>{knowledgeStatus.semantic_faiss.evidence_count || 0}</div>
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Evidence Count</div>
+            <div className="text-sm font-semibold font-mono text-slate-900 mt-1">{knowledgeStatus.semantic_faiss?.evidence_count || 0}</div>
           </div>
           <div>
-            <div style={{ fontWeight: 600, color: 'var(--slate-700)', marginBottom: '4px' }}>Embedding model</div>
-            <div style={{ color: 'var(--slate-600)', fontFamily: 'var(--font-mono)', fontSize: '11px', wordBreak: 'break-all' }}>
-              {knowledgeStatus.semantic_faiss.embedding_model || 'Not configured'}
+            <div className="text-xs font-semibold uppercase tracking-wider text-slate-500">Embedding Model</div>
+            <div className="text-xs font-mono text-slate-600 mt-1 truncate" title={knowledgeStatus.semantic_faiss?.embedding_model}>
+              {knowledgeStatus.semantic_faiss?.embedding_model || 'Not configured'}
             </div>
           </div>
         </div>
       )}
 
       {knowledgeStatus?.semantic_faiss?.available && (
-        <div style={{ marginTop: '16px', padding: '16px', background: 'var(--white)', border: '1px solid var(--border-subtle)', borderRadius: '6px' }}>
-          <div style={{ fontWeight: 600, color: 'var(--navy-900)', marginBottom: '12px', fontSize: '14px' }}>
-            Semantic Retrieval Inspection
+        <div className="bg-white border border-slate-200 rounded-lg p-5 mb-6 shadow-sm">
+          <div className="font-semibold text-slate-900 mb-3 text-sm flex items-center gap-2">
+            <span>Semantic Retrieval Inspection</span>
           </div>
-          <form onSubmit={handleTestSemanticSearch} style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+          <form onSubmit={handleTestSemanticSearch} className="flex gap-2 mb-3">
             <input
               type="text"
               value={testQuery}
-              onChange={(e) => setTestQuery(e.target.value)}
-              placeholder="e.g. water problems in Dharashiv"
-              style={{ flex: 1, padding: '8px 12px', border: '1px solid var(--border-subtle)', borderRadius: '4px', fontSize: '13px' }}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTestQuery(e.target.value)}
+              placeholder="e.g. water problem in Dharashiv"
+              className="flex-1 px-3 py-2 border border-slate-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500"
               disabled={isSearchingSemantic}
             />
-            <Button type="submit" variant="primary" disabled={isSearchingSemantic || !testQuery.trim()} style={{ fontSize: '13px' }}>
+            <button
+              type="submit"
+              disabled={isSearchingSemantic || !testQuery.trim()}
+              className="px-4 py-2 bg-slate-900 hover:bg-slate-800 disabled:opacity-50 text-white rounded text-sm font-medium transition-colors"
+            >
               {isSearchingSemantic ? 'Searching...' : 'Test Retrieval'}
-            </Button>
+            </button>
           </form>
 
           {semanticError && (
-            <div style={{ padding: '8px 12px', background: 'var(--red-50)', color: 'var(--red-700)', fontSize: '13px', borderRadius: '4px' }}>
+            <div className="p-3 bg-rose-50 border border-rose-200 text-rose-700 text-xs rounded mb-3">
               {semanticError}
             </div>
           )}
 
           {semanticResults && (
-            <div style={{ marginTop: '12px' }}>
-              <div style={{ fontSize: '12px', color: 'var(--slate-500)', marginBottom: '8px', fontWeight: 500 }}>
+            <div className="mt-4">
+              <div className="text-xs font-medium text-slate-500 mb-2">
                 Top Results ({semanticResults.length})
               </div>
               {semanticResults.length === 0 ? (
-                <div style={{ fontSize: '13px', color: 'var(--slate-500)' }}>No results found.</div>
+                <div className="text-xs text-slate-500">No results found.</div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  {semanticResults.map((r, i) => (
-                    <div key={i} style={{ padding: '12px', border: '1px solid var(--border-subtle)', borderRadius: '4px', background: 'var(--slate-50)' }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                        <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--navy-900)' }}>{r.title}</div>
-                        <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--amber-700)', background: 'var(--amber-50)', padding: '2px 6px', borderRadius: '4px' }}>
-                          Sim: {r.similarity_score?.toFixed(3)}
-                        </div>
+                <div className="space-y-2">
+                  {semanticResults.map((r: any, i: number) => (
+                    <div key={i} className="p-3 border border-slate-200 rounded bg-slate-50">
+                      <div className="flex justify-between items-center mb-1">
+                        <span className="font-semibold text-xs text-slate-900">{r.title}</span>
+                        <span className="text-xs font-mono font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2 py-0.5 rounded">
+                          Sim: {typeof r.similarity_score === 'number' ? r.similarity_score.toFixed(3) : 'N/A'}
+                        </span>
                       </div>
-                      <div style={{ fontSize: '13px', color: 'var(--slate-700)', lineHeight: 1.4 }}>{r.content}</div>
-                      <div style={{ marginTop: '6px', fontSize: '11px', color: 'var(--slate-500)', fontFamily: 'var(--font-mono)' }}>
+                      <p className="text-xs text-slate-700 leading-relaxed">{r.content}</p>
+                      <div className="mt-2 text-[11px] text-slate-500 font-mono">
                         ID: {r.evidence_id} | {r.district}, {r.state}
                       </div>
                     </div>
@@ -396,147 +237,219 @@ export const DatasetsPage: React.FC = () => {
         </div>
       )}
 
-      <div className={styles.tableSection}>
+      {/* Datasets Table */}
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden mb-6">
+        <div className="px-5 py-4 border-b border-slate-200 bg-slate-50 flex items-center justify-between">
+          <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">Registered Public Datasets</span>
+          <span className="text-xs text-slate-500">{datasets.length} Total</span>
+        </div>
         {isLoading ? (
-          <div style={{ padding: '32px', textAlign: 'center', color: 'var(--slate-500)' }}>
-            Loading public datasets catalog...
-          </div>
+          <div className="p-8 text-center text-sm text-slate-500">Loading public datasets catalog...</div>
         ) : (
-          <Table
-            columns={columns}
-            data={datasets}
-            keyExtractor={(row) => row.dataset_id}
-            emptyMessage="No public datasets registered."
-          />
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 font-medium">
+                <tr>
+                  <th className="py-3 px-4">Dataset / Registry</th>
+                  <th className="py-3 px-4">Publisher &amp; Source</th>
+                  <th className="py-3 px-4">Scope &amp; Type</th>
+                  <th className="py-3 px-4">License</th>
+                  <th className="py-3 px-4">Status</th>
+                  <th className="py-3 px-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200">
+                {datasets.map((d) => (
+                  <tr key={d.dataset_id} className="hover:bg-slate-50 transition-colors">
+                    <td className="py-3 px-4">
+                      <div className="font-semibold text-slate-900">{d.title}</div>
+                      {d.description && <div className="text-[11px] text-slate-500 mt-0.5 max-w-md">{d.description}</div>}
+                      {d.source_url && (
+                        <a
+                          href={d.source_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:underline mt-1"
+                        >
+                          <span>Official Source</span>
+                          <ExternalLink size={10} />
+                        </a>
+                      )}
+                    </td>
+                    <td className="py-3 px-4">
+                      <div className="font-medium text-slate-800">{d.publisher || d.source_name}</div>
+                      <span className="inline-block mt-0.5 px-1.5 py-0.5 bg-slate-100 text-slate-600 text-[10px] rounded">
+                        {d.source_name}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 text-slate-600">
+                      <div>{d.geographic_scope}</div>
+                      <div className="text-[10px] text-slate-400">{d.data_type}</div>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-600 text-[11px]">
+                      {d.license}
+                    </td>
+                    <td className="py-3 px-4">
+                      {d.ingestion_status === 'INGESTED' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 size={11} /> INGESTED
+                        </span>
+                      ) : d.ingestion_status === 'FAILED' ? (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-rose-50 text-rose-700 border border-rose-200">
+                          <AlertCircle size={11} /> FAILED
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-slate-100 text-slate-700">
+                          <Clock size={11} /> NOT_INGESTED
+                        </span>
+                      )}
+                    </td>
+                    <td className="py-3 px-4 text-right">
+                      <button
+                        onClick={() => handleSelectDataset(d)}
+                        className="px-2.5 py-1 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded text-xs font-medium transition-colors"
+                      >
+                        Inspect
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
 
-      {datasets.length > 0 && (
-        <div style={{ marginTop: '20px', display: 'flex', gap: '12px' }}>
-          {datasets.map((d) => (
-            <Button
-              key={d.dataset_id}
-              variant={selectedDataset?.dataset_id === d.dataset_id ? 'primary' : 'secondary'}
-              onClick={() => handleSelectDataset(d)}
-              style={{ fontSize: '13px', padding: '6px 14px' }}
-            >
-              <Database size={14} style={{ marginRight: '6px' }} />
-              Inspect: {d.title.split('(')[0].trim()}
-            </Button>
-          ))}
-        </div>
-      )}
-
+      {/* Dataset Inspection Details */}
       {selectedDataset && (
-        <div className={styles.detailCard}>
-          <div className={styles.detailHeader}>
+        <div className="bg-white border border-slate-200 rounded-lg p-5 shadow-sm mb-6">
+          <div className="flex justify-between items-start pb-4 border-b border-slate-200 mb-4">
             <div>
-              <div className={styles.detailTitle}>{selectedDataset.title}</div>
-              <div style={{ fontSize: '13px', color: 'var(--slate-500)', marginTop: '4px' }}>
-                {selectedDataset.description}
-              </div>
+              <h2 className="text-base font-bold text-slate-900">{selectedDataset.title}</h2>
+              <p className="text-xs text-slate-500 mt-1">{selectedDataset.description}</p>
             </div>
             <button
               onClick={() => setSelectedDataset(null)}
-              style={{
-                background: 'none',
-                border: 'none',
-                cursor: 'pointer',
-                color: 'var(--slate-400)',
-                padding: '4px',
-              }}
+              className="text-slate-400 hover:text-slate-600 p-1"
               aria-label="Close details"
             >
               <X size={18} />
             </button>
           </div>
 
-          <div className={styles.detailGrid}>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>Dataset ID</div>
-              <div className={styles.gridValue} style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                {selectedDataset.dataset_id}
-              </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-xs mb-6">
+            <div className="p-3 bg-slate-50 rounded border border-slate-100">
+              <div className="text-slate-500 uppercase tracking-wider font-semibold text-[10px]">Dataset ID</div>
+              <div className="font-mono text-slate-800 mt-1">{selectedDataset.dataset_id}</div>
             </div>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>Source Name</div>
-              <div className={styles.gridValue}>{selectedDataset.source_name}</div>
+            <div className="p-3 bg-slate-50 rounded border border-slate-100">
+              <div className="text-slate-500 uppercase tracking-wider font-semibold text-[10px]">Source Name</div>
+              <div className="text-slate-800 font-medium mt-1">{selectedDataset.source_name}</div>
             </div>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>Publisher</div>
-              <div className={styles.gridValue}>{selectedDataset.publisher || 'Not Specified'}</div>
+            <div className="p-3 bg-slate-50 rounded border border-slate-100">
+              <div className="text-slate-500 uppercase tracking-wider font-semibold text-[10px]">Publisher</div>
+              <div className="text-slate-800 font-medium mt-1">{selectedDataset.publisher || 'Not Specified'}</div>
             </div>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>Geographic Scope</div>
-              <div className={styles.gridValue}>{selectedDataset.geographic_scope}</div>
-            </div>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>Data Type</div>
-              <div className={styles.gridValue}>{selectedDataset.data_type}</div>
-            </div>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>License</div>
-              <div className={styles.gridValue} style={{ fontFamily: 'var(--font-mono)', fontSize: '12px' }}>
-                {selectedDataset.license}
-              </div>
-            </div>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>Last Updated</div>
-              <div className={styles.gridValue}>{selectedDataset.last_updated || 'N/A'}</div>
-            </div>
-            <div className={styles.gridItem}>
-              <div className={styles.gridLabel}>Ingested Records</div>
-              <div className={styles.gridValue}>{selectedDataset.record_count} Verified Records</div>
+            <div className="p-3 bg-slate-50 rounded border border-slate-100">
+              <div className="text-slate-500 uppercase tracking-wider font-semibold text-[10px]">Ingested Records</div>
+              <div className="text-slate-800 font-medium mt-1">{selectedDataset.record_count} Records</div>
             </div>
           </div>
 
           {selectedDataset.ingestion_status === 'INGESTED' && (
-            <div className={styles.recordsTableWrapper}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '8px' }}>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <Button
-                    variant={activeTab === 'records' ? 'primary' : 'ghost'}
+            <div>
+              <div className="flex items-center justify-between border-b border-slate-200 pb-3 mb-4">
+                <div className="flex gap-2">
+                  <button
                     onClick={() => setActiveTab('records')}
-                    style={{ fontSize: '12px', padding: '4px 10px' }}
+                    className={`px-3 py-1.5 rounded text-xs font-medium ${
+                      activeTab === 'records'
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
                   >
                     Normalized Records ({records.length})
-                  </Button>
-                  <Button
-                    variant={activeTab === 'knowledge' ? 'primary' : 'ghost'}
+                  </button>
+                  <button
                     onClick={() => setActiveTab('knowledge')}
-                    style={{ fontSize: '12px', padding: '4px 10px' }}
+                    className={`px-3 py-1.5 rounded text-xs font-medium ${
+                      activeTab === 'knowledge'
+                        ? 'bg-slate-900 text-white'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
                   >
                     Knowledge Evidence Grounding ({evidenceList.length})
-                  </Button>
+                  </button>
                 </div>
-                <span style={{ fontSize: '11px', color: 'var(--slate-500)' }}>
+                <span className="text-[11px] text-slate-500">
                   {activeTab === 'records' ? 'Direct Row-level Data' : 'Deterministic Grounding Text for Retrieval'}
                 </span>
               </div>
 
               {isLoadingRecords ? (
-                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--slate-500)', fontSize: '12px' }}>
-                  Loading inspection details...
-                </div>
+                <div className="p-6 text-center text-xs text-slate-500">Loading inspection details...</div>
               ) : activeTab === 'records' ? (
-                <Table
-                  columns={recordColumns}
-                  data={records}
-                  keyExtractor={(r) => r.record_id}
-                  emptyMessage="No normalized records found."
-                />
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3">State</th>
+                        <th className="py-2.5 px-3">District</th>
+                        <th className="py-2.5 px-3">Metric</th>
+                        <th className="py-2.5 px-3">Value</th>
+                        <th className="py-2.5 px-3">Source Row ID</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {records.map((r: PublicRecordItem) => (
+                        <tr key={r.record_id} className="hover:bg-slate-50">
+                          <td className="py-2 px-3 font-semibold text-slate-800">{r.state}</td>
+                          <td className="py-2 px-3 text-slate-700">{r.district}</td>
+                          <td className="py-2 px-3 text-slate-700">{r.metric_name}</td>
+                          <td className="py-2 px-3 font-mono font-semibold text-slate-900">
+                            {r.metric_value} {r.unit || ''}
+                          </td>
+                          <td className="py-2 px-3 font-mono text-[11px] text-slate-500">{r.source_reference}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               ) : (
-                <Table
-                  columns={evidenceColumns}
-                  data={evidenceList}
-                  keyExtractor={(e) => e.evidence_id}
-                  emptyMessage="No knowledge evidence records found."
-                />
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-slate-50 text-slate-600 font-medium border-b border-slate-200">
+                      <tr>
+                        <th className="py-2.5 px-3">Evidence Title &amp; Grounding Text</th>
+                        <th className="py-2.5 px-3">Ground Metric</th>
+                        <th className="py-2.5 px-3">Provenance Reference</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {evidenceList.map((e: KnowledgeEvidenceItem) => (
+                        <tr key={e.evidence_id} className="hover:bg-slate-50">
+                          <td className="py-2.5 px-3 max-w-xl">
+                            <div className="font-semibold text-slate-900">{e.title}</div>
+                            <div className="text-slate-600 text-[11px] mt-1 leading-relaxed">{e.content}</div>
+                          </td>
+                          <td className="py-2.5 px-3 font-mono font-semibold text-slate-900">
+                            {e.metric_value !== null && e.metric_value !== undefined ? `${e.metric_value} ${e.unit || ''}` : 'N/A'}
+                          </td>
+                          <td className="py-2.5 px-3">
+                            <span className="font-mono text-[11px] text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded">
+                              {e.source_reference}
+                            </span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           )}
         </div>
       )}
-    </PageContainer>
+    </div>
   );
 };

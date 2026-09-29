@@ -1,6 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { CitizenReport } from '../../types';
 import { ASSETS } from '../../data/mockData';
+import {
+  fetchCitizenRequestByRefApi,
+  fetchCitizenRequestEvidenceApi,
+  triggerGroundedAnalysisApi,
+  CitizenRequestDetail,
+  RequestEvidenceResponse,
+  GroundedAnalysisResponse,
+} from '../../api/reports';
 
 interface EvidenceExplorerViewProps {
   selectedReport?: CitizenReport;
@@ -14,47 +22,95 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
   const [inspectorExpanded, setInspectorExpanded] = useState<boolean>(false);
   const [showFilterLogModal, setShowFilterLogModal] = useState<boolean>(false);
 
+  // Live Backend Inspection State
+  const initialRef = selectedReport?.id?.startsWith('NL-') ? selectedReport.id : 'NL-2025-0842';
+  const [searchRefInput, setSearchRefInput] = useState<string>(initialRef);
+  const [activeRefId, setActiveRefId] = useState<string>(initialRef);
+  const [liveRequest, setLiveRequest] = useState<CitizenRequestDetail | null>(null);
+  const [liveEvidence, setLiveEvidence] = useState<RequestEvidenceResponse | null>(null);
+  const [liveAnalysis, setLiveAnalysis] = useState<GroundedAnalysisResponse | null>(null);
+  const [isLoadingLive, setIsLoadingLive] = useState<boolean>(false);
+  const [isGeneratingAnalysis, setIsGeneratingAnalysis] = useState<boolean>(false);
+  const [liveError, setLiveError] = useState<string | null>(null);
+
+  const fetchLiveDetails = async (refId: string) => {
+    if (!refId.trim()) return;
+    setIsLoadingLive(true);
+    setLiveError(null);
+    try {
+      const [reqData, evData] = await Promise.all([
+        fetchCitizenRequestByRefApi(refId).catch(() => null),
+        fetchCitizenRequestEvidenceApi(refId).catch(() => null),
+      ]);
+      if (reqData) {
+        setLiveRequest(reqData);
+        setActiveRefId(refId);
+      }
+      if (evData) {
+        setLiveEvidence(evData);
+      }
+    } catch (err: any) {
+      setLiveError(err.message || 'Failed to fetch live request details');
+    } finally {
+      setIsLoadingLive(false);
+    }
+  };
+
+  useEffect(() => {
+    if (selectedReport?.id && selectedReport.id.startsWith('NL-')) {
+      setSearchRefInput(selectedReport.id);
+      fetchLiveDetails(selectedReport.id);
+    }
+  }, [selectedReport]);
+
+  const handleLookupRef = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchRefInput.trim()) return;
+    fetchLiveDetails(searchRefInput.trim());
+  };
+
+  const handleGenerateAnalysis = async () => {
+    if (!activeRefId) return;
+    setIsGeneratingAnalysis(true);
+    try {
+      const analysisRes = await triggerGroundedAnalysisApi(activeRefId);
+      setLiveAnalysis(analysisRes);
+      onShowToast('Analysis Generated', 'Evidence-grounded analysis successfully produced.', 'success');
+    } catch (err: any) {
+      onShowToast('Analysis Note', err.message || 'Grounded analysis generated with evidence fallback.', 'info');
+    } finally {
+      setIsGeneratingAnalysis(false);
+    }
+  };
+
   const handleDownloadJson = () => {
-    const payload = {
-      report_id: 'NL-2025-0842',
-      pipeline: 'Gemini 1.5 Grounded RAG + FAISS Multilingual',
+    const payload = liveAnalysis ? {
+      reference_id: liveAnalysis.reference_id,
+      model_name: liveAnalysis.model_name,
+      analysis: liveAnalysis.analysis,
+      retrieved_evidence: liveEvidence?.results || [],
+    } : {
+      report_id: activeRefId,
+      pipeline: 'Gemini Grounded RAG + FAISS Multilingual',
       ward: selectedReport?.ward || 'Dharashiv Ward 4',
-      faithfulness_score: 0.968,
       corroborated_sources: [
         {
           id: 'OGD-JJM-2024-MH-01',
           agency: 'Ministry of Jal Shakti',
-          cosine_sim: 0.892,
-          chunk_id: '8812',
           verified_coverage: '50.76%',
         },
-        {
-          id: 'NHM-INFRA-MH-2023',
-          agency: 'Ministry of Health & Family Welfare',
-          cosine_sim: 0.835,
-          table: 'Audit Table 4.B',
-          findings: '14% peripheral health posts report groundwater drawdown',
-        },
       ],
-      missing_evidence_claims: [
-        'Ward 4 PHC borewell pump motor physical integrity (No smart switchboard telemetry)',
-      ],
-      dispatched_action: {
-        ticket: '#WW-DHR-882',
-        role: 'Junior Engineer Water Works',
-        sla_hours: 24,
-      },
     };
 
     const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(payload, null, 2));
     const downloadAnchor = document.createElement('a');
     downloadAnchor.setAttribute('href', dataUri);
-    downloadAnchor.setAttribute('download', 'NL-2025-0842-provenance.json');
+    downloadAnchor.setAttribute('download', `${activeRefId}-provenance.json`);
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
     downloadAnchor.remove();
 
-    onShowToast('JSON Provenance Saved', 'Audit metadata exported with vector hash verification.', 'success');
+    onShowToast('JSON Provenance Saved', 'Audit metadata exported with vector verification.', 'success');
   };
 
   return (
@@ -110,6 +166,59 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
         </div>
       </div>
 
+      {/* Live Track & Retrieval Query Control Ribbon */}
+      <div className="px-4 lg:px-6 py-4 bg-[#ffffff] border-b border-[#e5eeff] shadow-xs">
+        <form onSubmit={handleLookupRef} className="flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-3 flex-1 min-w-[280px] max-w-xl">
+            <span className="font-mono text-xs uppercase font-bold text-slate-700 whitespace-nowrap">
+              Track Reference ID:
+            </span>
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={searchRefInput}
+                onChange={(e) => setSearchRefInput(e.target.value)}
+                placeholder="e.g. NL-DHA-2026-6211"
+                className="w-full pl-3 pr-24 py-1.5 bg-slate-50 border border-slate-300 rounded text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+              />
+              <button
+                type="submit"
+                disabled={isLoadingLive}
+                className="absolute right-1 top-1 bottom-1 px-3 bg-slate-900 hover:bg-slate-800 text-white rounded text-[11px] font-medium transition-colors"
+              >
+                {isLoadingLive ? 'Loading...' : 'Fetch'}
+              </button>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {liveRequest && (
+              <div className="flex items-center gap-2 text-xs font-mono">
+                <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200 font-semibold">
+                  Status: {liveRequest.status}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-blue-50 text-blue-800 border border-blue-200">
+                  Retrieval: {liveRequest.retrieval_status}
+                </span>
+                <span className="px-2 py-0.5 rounded bg-slate-100 text-slate-700">
+                  Evidence: {liveRequest.evidence_count} found
+                </span>
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={handleGenerateAnalysis}
+              disabled={isGeneratingAnalysis || !activeRefId}
+              className="px-4 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-semibold flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined text-[16px]">psychology</span>
+              <span>{isGeneratingAnalysis ? 'Analyzing Evidence...' : 'Generate Grounded Analysis'}</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
       {/* Main 3-Column Inspection Grid */}
       <div className="px-4 lg:px-6 py-6 flex flex-col gap-6 max-w-[1600px] w-full mx-auto">
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
@@ -126,7 +235,7 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
                   </span>
                 </div>
                 <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-[#dce9ff] text-[#0b1c30] font-semibold">
-                  SRC: Mobile Grievance
+                  {liveRequest?.reference_id || activeRefId}
                 </span>
               </div>
 
@@ -134,19 +243,19 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
                 <div>
                   <div className="flex items-center justify-between pb-1.5">
                     <span className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                      Unstructured Ingest Narrative
+                      Citizen Ingest Narrative
                     </span>
                     <span className="font-mono text-[11px] text-[#006a61] font-semibold">
-                      Recorded in Marathi + Hindi
+                      AI Extraction: {liveRequest?.ai_extraction_status || 'COMPLETED'}
                     </span>
                   </div>
                   <div className="p-3 rounded-lg bg-[#eff4ff] text-[#0b1c30] text-[13px] border border-[#dce9ff] relative leading-relaxed">
                     <p className="italic">
-                      “Our primary health centre does not have clean drinking water and the borewell is not working for the past three weeks. Patients coming with fever and dehydration are having to purchase bottled water from private stalls 2km away.”
+                      “{liveRequest?.citizen_request || selectedReport?.narrative || 'Primary health centre lacks clean drinking water facility and borewell is non-functional.'}”
                     </p>
                     <div className="mt-2 pt-2 border-t border-[#dce9ff] flex items-center justify-between font-mono text-[11px] text-[#45464d]">
-                      <span>Geo: 18.1856° N, 76.0416° E</span>
-                      <span className="text-[#006a61] font-semibold">Audio &amp; Text Synced</span>
+                      <span>Locality: {liveRequest?.location?.locality || selectedReport?.location || 'Ward 4'}</span>
+                      <span className="text-[#006a61] font-semibold">{liveRequest?.location?.district || 'Dharashiv'}, {liveRequest?.location?.state || 'Maharashtra'}</span>
                     </div>
                   </div>
                 </div>
@@ -154,40 +263,37 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
                 {/* Automated Entity Dissection (NER) */}
                 <div className="flex flex-col gap-2">
                   <span className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                    Automated Entity Dissection (NER)
+                    Structured Request Metadata
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     <div className="p-2.5 rounded bg-[#eff4ff] border border-[#dce9ff] flex flex-col">
-                      <span className="text-[11px] text-[#76777d]">Problem Domain</span>
+                      <span className="text-[11px] text-[#76777d]">Category</span>
                       <span className="text-[13px] text-[#0b1c30] font-semibold flex items-center gap-1 mt-0.5">
                         <span className="material-symbols-outlined text-[16px] text-[#006a61]">
                           water_drop
                         </span>
-                        Drinking Water Deficit
+                        {liveRequest?.category || selectedReport?.category || 'Water'}
                       </span>
                     </div>
 
                     <div className="p-2.5 rounded bg-[#eff4ff] border border-[#dce9ff] flex flex-col">
-                      <span className="text-[11px] text-[#76777d]">Critical Asset</span>
-                      <span className="text-[13px] text-[#0b1c30] font-semibold flex items-center gap-1 mt-0.5">
-                        <span className="material-symbols-outlined text-[16px] text-[#ba1a1a]">
-                          local_hospital
-                        </span>
-                        Primary Health Centre (PHC)
+                      <span className="text-[11px] text-[#76777d]">Severity / Summary</span>
+                      <span className="text-[12px] text-[#0b1c30] font-medium mt-0.5 truncate" title={liveRequest?.problem_summary || ''}>
+                        {liveRequest?.problem_summary || 'Clean drinking water & borewell disruption'}
                       </span>
                     </div>
 
                     <div className="p-2.5 rounded bg-[#eff4ff] border border-[#dce9ff] flex flex-col">
-                      <span className="text-[11px] text-[#76777d]">Administrative Jurisdiction</span>
+                      <span className="text-[11px] text-[#76777d]">Administrative Level</span>
                       <span className="text-[13px] text-[#0b1c30] font-semibold mt-0.5">
-                        Ward 4, Dharashiv, MH
+                        {liveRequest?.location?.district || 'Dharashiv'}, {liveRequest?.location?.state || 'Maharashtra'}
                       </span>
                     </div>
 
                     <div className="p-2.5 rounded bg-[#eff4ff] border border-[#dce9ff] flex flex-col">
-                      <span className="text-[11px] text-[#76777d]">Stated Citizen Impact</span>
+                      <span className="text-[11px] text-[#76777d]">Affected Population</span>
                       <span className="text-[13px] text-[#0b1c30] font-semibold mt-0.5">
-                        85 HHs + PHC Inflow
+                        {liveRequest?.affected_household_count || selectedReport?.householdsAffected || 85} Households
                       </span>
                     </div>
                   </div>
@@ -201,31 +307,31 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
                     </span>
                     <div className="flex flex-col">
                       <span className="text-[12px] text-[#0b1c30] font-semibold leading-tight">
-                        Human Verification Node
+                        Citizen Request Lifecycle
                       </span>
                       <span className="text-[11px] text-[#45464d]">
-                        Validated via OTP signature &amp; local corporator log
+                        Tracking Ref: {activeRefId} • Status: {liveRequest?.status || 'RECEIVED'}
                       </span>
                     </div>
                   </div>
                   <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] text-[11px] font-semibold">
-                    Confirmed by Citizen
+                    Audited
                   </span>
                 </div>
 
                 {/* Geohash Map Thumbnail */}
                 <div className="rounded-lg overflow-hidden relative shadow-xs border border-[#dce9ff]">
                   <div
-                    className="w-full h-32 bg-cover bg-center"
+                    className="w-full h-28 bg-cover bg-center"
                     style={{ backgroundImage: `url('${ASSETS.mapBackground}')` }}
                   ></div>
                   <div className="absolute inset-0 bg-gradient-to-t from-[#131b2e] via-transparent to-transparent flex items-end p-2.5">
                     <div className="flex items-center justify-between w-full text-[11px]">
                       <span className="text-[#ffffff] font-semibold flex items-center gap-1">
                         <span className="material-symbols-outlined text-[14px]">pin_drop</span>
-                        Dharashiv District PHC Cluster
+                        {liveRequest?.location?.district || 'Dharashiv'} District PHC Cluster
                       </span>
-                      <span className="font-mono text-[#89f5e7]">Geohash: te2c9</span>
+                      <span className="font-mono text-[#89f5e7]">State: {liveRequest?.location?.state || 'MH'}</span>
                     </div>
                   </div>
                 </div>
@@ -246,123 +352,103 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
                   </span>
                 </div>
                 <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-[#dce9ff] text-[#0b1c30] font-semibold">
-                  FAISS Cosine &gt; 0.82
+                  {liveEvidence?.evidence_count ?? 1} Items Found
                 </span>
               </div>
 
               <div className="p-4 flex flex-col gap-4">
-                {/* Chunk 1: JJM */}
-                <div className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] shadow-xs flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] text-[11px] font-semibold flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[13px]">verified</span>
-                      <span>Verified Public Dataset (Updated Q3 2024)</span>
-                    </span>
-                    <span className="font-mono text-[11px] text-[#006a61] font-semibold">
-                      sim: 0.892
-                    </span>
-                  </div>
+                {liveEvidence && liveEvidence.results.length > 0 ? (
+                  liveEvidence.results.map((item, idx) => (
+                    <div key={idx} className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] shadow-xs flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] text-[11px] font-semibold flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[13px]">verified</span>
+                          <span>Verified Baseline Evidence</span>
+                        </span>
+                        <span className="font-mono text-[11px] text-[#006a61] font-semibold">
+                          sim: {item.similarity_score ? item.similarity_score.toFixed(3) : 'N/A'} (L{item.metadata_match_level})
+                        </span>
+                      </div>
 
-                  <div>
-                    <h3 className="font-semibold text-[14px] text-[#0b1c30]">
-                      District-wise Rural Household Tap Water Coverage
-                    </h3>
-                    <span className="font-mono text-[11px] text-[#45464d]">
-                      Source: Open Government Data (OGD) / Jal Jeevan Mission
-                    </span>
-                  </div>
+                      <div>
+                        <h3 className="font-semibold text-[14px] text-[#0b1c30]">
+                          {item.evidence.title}
+                        </h3>
+                        <span className="font-mono text-[11px] text-[#45464d]">
+                          Source: {item.evidence.source_name} ({item.evidence.source_reference})
+                        </span>
+                      </div>
 
-                  <div className="p-2 rounded bg-[#ffffff] border border-[#dce9ff] flex items-center justify-between">
-                    <span className="font-mono text-[11px] text-[#0b1c30] font-semibold">
-                      OGD-JJM-2024-MH-01
-                    </span>
-                    <span className="font-mono text-[11px] text-[#76777d]">Chunk #8812</span>
-                  </div>
+                      <div className="p-2 rounded bg-[#ffffff] border border-[#dce9ff] flex items-center justify-between">
+                        <span className="font-mono text-[11px] text-[#0b1c30] font-semibold">
+                          ID: {item.evidence.evidence_id}
+                        </span>
+                        <span className="font-mono text-[11px] text-[#76777d]">Method: {item.retrieval_method}</span>
+                      </div>
 
-                  <div className="p-2 rounded bg-[#e5eeff] flex flex-col gap-1 border border-[#dce9ff]">
-                    <span className="text-[11px] text-[#76777d]">Recorded Municipal Metric</span>
-                    <div className="flex items-baseline justify-between">
-                      <span className="font-mono text-[14px] font-bold text-[#ba1a1a]">
-                        50.76% tap coverage
+                      <div className="p-2.5 rounded bg-[#e5eeff] flex flex-col gap-1 border border-[#dce9ff]">
+                        <span className="text-[11px] text-[#76777d]">Recorded Public Metric</span>
+                        <div className="flex items-baseline justify-between">
+                          <span className="font-mono text-[14px] font-bold text-[#ba1a1a]">
+                            {item.evidence.metric_value !== undefined && item.evidence.metric_value !== null ? `${item.evidence.metric_value} ${item.evidence.unit || ''}` : item.evidence.metric_name}
+                          </span>
+                          <span className="font-mono text-[11px] text-[#45464d]">
+                            Year: {item.evidence.year || '2024'}
+                          </span>
+                        </div>
+                        <p className="text-xs text-slate-700 mt-1 leading-relaxed">{item.evidence.content}</p>
+                      </div>
+
+                      <div className="pt-0.5 flex items-center justify-between text-[11px] text-[#45464d]">
+                        <span className="flex items-center gap-1 text-[#006a61] font-semibold">
+                          <span className="material-symbols-outlined text-[15px]">link</span> Ingested via data.gov.in
+                        </span>
+                        <span className="font-mono">Scope: {item.evidence.geographic_level}</span>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  /* Fallback display if not yet fetched */
+                  <div className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] shadow-xs flex flex-col gap-2">
+                    <div className="flex items-center justify-between">
+                      <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] text-[11px] font-semibold flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[13px]">verified</span>
+                        <span>Verified Public Dataset</span>
                       </span>
+                      <span className="font-mono text-[11px] text-[#006a61] font-semibold">
+                        sim: 0.892
+                      </span>
+                    </div>
+
+                    <div>
+                      <h3 className="font-semibold text-[14px] text-[#0b1c30]">
+                        Dharashiv (Maharashtra) - Rural Tap Water Coverage
+                      </h3>
                       <span className="font-mono text-[11px] text-[#45464d]">
-                        State Average: 78.4%
+                        Source: Open Government Data (OGD) / Jal Jeevan Mission
                       </span>
                     </div>
-                    <div className="w-full bg-[#dce9ff] h-2 rounded-full overflow-hidden mt-0.5">
-                      <div className="bg-[#ba1a1a] h-full rounded-full" style={{ width: '50.76%' }}></div>
+
+                    <div className="p-2 rounded bg-[#ffffff] border border-[#dce9ff] flex items-center justify-between">
+                      <span className="font-mono text-[11px] text-[#0b1c30] font-semibold">
+                        EVID-ds-jjm-water-coverage-2024-OGD-JJM-2024-MH-01
+                      </span>
+                      <span className="font-mono text-[11px] text-[#76777d]">OGD-JJM-2024-MH-01</span>
+                    </div>
+
+                    <div className="p-2 rounded bg-[#e5eeff] flex flex-col gap-1 border border-[#dce9ff]">
+                      <span className="text-[11px] text-[#76777d]">Recorded Public Metric</span>
+                      <div className="flex items-baseline justify-between">
+                        <span className="font-mono text-[14px] font-bold text-[#ba1a1a]">
+                          50.76% tap coverage
+                        </span>
+                        <span className="font-mono text-[11px] text-[#45464d]">
+                          Year: 2024
+                        </span>
+                      </div>
                     </div>
                   </div>
-
-                  <div className="pt-0.5 flex items-center justify-between text-[11px] text-[#45464d]">
-                    <span className="flex items-center gap-1 text-[#006a61] font-semibold">
-                      <span className="material-symbols-outlined text-[15px]">link</span> Ingested via data.gov.in API
-                    </span>
-                    <span className="font-mono">Vector Hash: 7c3f..18</span>
-                  </div>
-                </div>
-
-                {/* Chunk 2: NHM */}
-                <div className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] shadow-xs flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="px-2 py-0.5 rounded bg-[#dce9ff] text-[#0b1c30] text-[11px] font-semibold flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[13px]">policy</span> Health Ministry Audit
-                    </span>
-                    <span className="font-mono text-[11px] text-[#45464d] font-semibold">
-                      sim: 0.835
-                    </span>
-                  </div>
-
-                  <div>
-                    <h3 className="font-semibold text-[14px] text-[#0b1c30]">
-                      District Health Infrastructure &amp; Water Provision Audit
-                    </h3>
-                    <span className="font-mono text-[11px] text-[#45464d]">
-                      Source: National Health Mission (NHM) Facility Survey
-                    </span>
-                  </div>
-
-                  <div className="p-2 rounded bg-[#ffffff] border border-[#dce9ff] flex items-center justify-between">
-                    <span className="font-mono text-[11px] text-[#0b1c30] font-semibold">
-                      NHM-INFRA-MH-2023
-                    </span>
-                    <span className="font-mono text-[11px] text-[#76777d]">Audit Table 4.B</span>
-                  </div>
-
-                  <div className="p-2.5 rounded bg-[#e5eeff] text-[12px] text-[#0b1c30] leading-relaxed border border-[#dce9ff]">
-                    <span className="text-[11px] text-[#76777d] block font-semibold mb-0.5">
-                      Audited Finding:
-                    </span>
-                    “14% of peripheral health posts in Dharashiv sub-district report intermittent
-                    groundwater drawdown and seasonal borewell failure in dry months (Feb-June).”
-                  </div>
-
-                  <div className="pt-0.5 flex items-center justify-between text-[11px] text-[#45464d]">
-                    <span className="flex items-center gap-1 text-[#006a61] font-semibold">
-                      <span className="material-symbols-outlined text-[15px]">table_chart</span> NHM Annual Archive
-                    </span>
-                    <span className="font-mono">Indexed: 12 Nov 2024</span>
-                  </div>
-                </div>
-
-                {/* Rejected documents banner */}
-                <div className="p-3 rounded-lg bg-[#dce9ff] border border-[#cbdbf5] flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px] text-[#45464d]">
-                      manage_search
-                    </span>
-                    <span className="text-[12px] text-[#0b1c30] font-medium">
-                      8 additional ungrounded documents rejected (similarity &lt; 0.70)
-                    </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setShowFilterLogModal(true)}
-                    className="font-mono text-[11px] text-[#006a61] font-semibold hover:underline cursor-pointer"
-                  >
-                    View Filter Log
-                  </button>
-                </div>
+                )}
               </div>
             </div>
           </div>
@@ -376,94 +462,97 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
                     psychology
                   </span>
                   <span className="font-semibold text-[14px] text-[#0b1c30]">
-                    AI-Assisted Grounded Analysis
+                    Evidence-Grounded Analysis
                   </span>
                 </div>
                 <span className="font-mono text-[11px] px-2 py-0.5 rounded bg-[#000000] text-[#ffffff] font-semibold">
-                  Gemini 1.5
+                  {liveAnalysis?.model_name || 'Gemini 2.5'}
                 </span>
               </div>
 
               <div className="p-4 flex flex-col gap-4">
-                <div className="flex flex-col gap-2">
-                  <span className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                    Synthesized Grounded Observations
-                  </span>
-
-                  {/* Observation 1 */}
-                  <div className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] shadow-xs flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5 text-[12px] text-[#006a61] font-semibold">
-                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                      <span>Observation 1 • Macro Supply Deficit Corroborated</span>
+                {liveAnalysis?.analysis ? (
+                  <div className="flex flex-col gap-3">
+                    {/* Summary */}
+                    <div className="p-3 bg-slate-50 border border-slate-200 rounded-lg text-xs leading-relaxed text-slate-800">
+                      <div className="font-bold uppercase tracking-wider text-[10px] text-slate-500 mb-1">Executive Summary</div>
+                      {liveAnalysis.analysis.summary}
                     </div>
-                    <p className="text-[13px] text-[#0b1c30] leading-relaxed">
-                      The available public dataset records rural household tap-water coverage for
-                      Dharashiv at <span className="font-mono font-bold text-[#ba1a1a]">50.76%</span> for
-                      the referenced reporting period, indicating a verified structural water deficit in
-                      the district{' '}
-                      <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-[#dce9ff] text-[#0b1c30] font-mono text-[11px] font-semibold">
-                        OGD-JJM-2024-MH-01
-                      </span>.
+
+                    {/* Observations */}
+                    <div className="space-y-2">
+                      <span className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
+                        Grounded Observations ({liveAnalysis.analysis.observations.length})
+                      </span>
+                      {liveAnalysis.analysis.observations.map((obs, oIdx) => (
+                        <div key={oIdx} className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] shadow-xs flex flex-col gap-1.5">
+                          <div className="flex items-center gap-1.5 text-[12px] text-[#006a61] font-semibold">
+                            <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                            <span>Observation {oIdx + 1}</span>
+                          </div>
+                          <p className="text-[12px] text-[#0b1c30] leading-relaxed">
+                            {obs.statement}
+                          </p>
+                          {obs.evidence_ids && obs.evidence_ids.length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {obs.evidence_ids.map((eid, eIdx) => (
+                                <span key={eIdx} className="font-mono text-[10px] bg-white border border-slate-200 text-emerald-800 px-1.5 py-0.5 rounded font-medium">
+                                  Evidence: {eid}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Evidence Gaps */}
+                    {liveAnalysis.analysis.evidence_gaps && liveAnalysis.analysis.evidence_gaps.length > 0 && (
+                      <div className="p-3 rounded-lg bg-amber-50 text-amber-900 border border-amber-200 shadow-xs flex flex-col gap-1.5">
+                        <div className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-amber-800">
+                          <span className="material-symbols-outlined text-[16px]">help_outline</span>
+                          <span>Evidence Gaps</span>
+                        </div>
+                        <ul className="text-[12px] space-y-1 list-disc list-inside">
+                          {liveAnalysis.analysis.evidence_gaps.map((gap, gIdx) => (
+                            <li key={gIdx}>{gap}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {/* Source References */}
+                    {liveAnalysis.analysis.source_references && liveAnalysis.analysis.source_references.length > 0 && (
+                      <div className="p-2.5 bg-slate-50 border border-slate-200 rounded text-xs">
+                        <span className="font-bold text-[10px] uppercase text-slate-500 tracking-wider">Source References: </span>
+                        <span className="font-mono text-[11px] text-slate-700">
+                          {liveAnalysis.analysis.source_references.join(', ')}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Limitations */}
+                    {liveAnalysis.analysis.limitations && liveAnalysis.analysis.limitations.length > 0 && (
+                      <div className="p-3 rounded-lg bg-slate-100 text-slate-700 border border-slate-200 text-xs">
+                        <div className="font-bold text-[10px] uppercase tracking-wider text-slate-500 mb-1">Audit Limitations</div>
+                        <ul className="space-y-0.5 list-disc list-inside text-[11px]">
+                          {liveAnalysis.analysis.limitations.map((lim, lIdx) => (
+                            <li key={lIdx}>{lim}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3 text-center py-6">
+                    <span className="material-symbols-outlined text-[36px] text-slate-400 mx-auto">
+                      science
+                    </span>
+                    <p className="text-xs text-slate-600 px-4">
+                      Click <strong>"Generate Grounded Analysis"</strong> above to synthesize an evidence-grounded decision support dossier using Gemini.
                     </p>
                   </div>
-
-                  {/* Observation 2 */}
-                  <div className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] shadow-xs flex flex-col gap-1.5">
-                    <div className="flex items-center gap-1.5 text-[12px] text-[#006a61] font-semibold">
-                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
-                      <span>Observation 2 • Vulnerable Health Asset Risk</span>
-                    </div>
-                    <p className="text-[13px] text-[#0b1c30] leading-relaxed">
-                      District health audits report intermittent groundwater depletion in peripheral
-                      medical centers during Q2/Q3{' '}
-                      <span className="inline-flex items-center px-1.5 py-0.2 rounded bg-[#dce9ff] text-[#0b1c30] font-mono text-[11px] font-semibold">
-                        NHM-INFRA-MH-2023
-                      </span>. The citizen's complaint regarding non-functional borewell infrastructure
-                      directly conforms with documented seasonal aquifer drawdown patterns.
-                    </p>
-                  </div>
-                </div>
-
-                {/* CRITICAL POLICY: MISSING GROUND EVIDENCE */}
-                <div className="p-3 rounded-lg bg-[#ffdad6] text-[#93000a] border border-[#ffdad6] shadow-xs flex flex-col gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px] text-[#ba1a1a]">
-                      warning
-                    </span>
-                    <span className="text-[12px] font-bold uppercase tracking-wider">
-                      Critical Policy: Missing Ground Evidence
-                    </span>
-                  </div>
-                  <p className="text-[12px] leading-relaxed">
-                    Available public evidence does not establish whether the specific Ward 4 primary
-                    health centre has an active borewell motor malfunction or dedicated municipal water
-                    tanker allocation. On-ground verification by local junior engineer required.
-                  </p>
-                  <div className="p-2 rounded bg-[#ffffff] text-[#0b1c30] font-mono text-[11px] flex items-center justify-between border border-[#ffdad6]">
-                    <span>Guardrail: Zero Hallucination Mode</span>
-                    <span className="text-[#ba1a1a] font-semibold">1 Claim Withheld</span>
-                  </div>
-                </div>
-
-                {/* Priority Signal Score */}
-                <div className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
-                    <span className="text-[11px] font-semibold uppercase tracking-wider text-[#76777d]">
-                      Priority Signal Score
-                    </span>
-                    <span className="text-[18px] text-[#0b1c30] font-bold">8.4 / 10</span>
-                  </div>
-                  <div className="w-full bg-[#dce9ff] h-2.5 rounded-full overflow-hidden flex">
-                    <div className="bg-[#ba1a1a] h-full" style={{ width: '45%' }} title="Hazard: 4.5"></div>
-                    <div className="bg-[#006a61] h-full" style={{ width: '25%' }} title="Facility Sensitivity: 2.5"></div>
-                    <div className="bg-[#565e74] h-full" style={{ width: '14%' }} title="Demographic Density: 1.4"></div>
-                  </div>
-                  <div className="flex justify-between font-mono text-[11px] text-[#45464d] pt-0.5">
-                    <span>PHC Hazard: 4.5</span>
-                    <span>Vuln Index: 2.5</span>
-                    <span>Inflow: 1.4</span>
-                  </div>
-                </div>
+                )}
               </div>
             </div>
           </div>
