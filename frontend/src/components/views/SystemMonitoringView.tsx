@@ -1,107 +1,99 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { fetchHealthApi, SystemHealth } from '../../api/health';
+
+const services: { key: keyof SystemHealth['services']; label: string }[] = [
+  { key: 'api', label: 'API' },
+  { key: 'database', label: 'Database' },
+  { key: 'gemini', label: 'Gemini' },
+  { key: 'embedding_model', label: 'Embedding model' },
+  { key: 'faiss', label: 'FAISS index' },
+  { key: 'storage', label: 'File storage' },
+];
 
 interface SystemMonitoringViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
 }
 
 export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onShowToast }) => {
+  const [health, setHealth] = useState<SystemHealth | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const runHealthCheck = async () => {
+    setIsChecking(true);
+    try {
+      const result = await fetchHealthApi();
+      setHealth(result);
+      setError(null);
+      onShowToast('Health check complete', `API status: ${result.status}.`);
+    } catch (checkError) {
+      setError(checkError instanceof Error ? checkError.message : 'Health endpoint could not be reached.');
+      setHealth(null);
+    } finally {
+      setIsChecking(false);
+    }
+  };
+
+  useEffect(() => {
+    let isActive = true;
+    fetchHealthApi().then((result) => {
+      if (isActive) {
+        setHealth(result);
+        setError(null);
+      }
+    }).catch((loadError: unknown) => {
+      if (isActive) setError(loadError instanceof Error ? loadError.message : 'Health endpoint could not be reached.');
+    }).finally(() => {
+      if (isActive) setIsChecking(false);
+    });
+    return () => { isActive = false; };
+  }, []);
+
   return (
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
-      <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
         <div>
-          <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
-            <span className="material-symbols-outlined text-[16px]">verified_user</span>
-            <span>Live Health Telemetry Stream</span>
-          </div>
-          <h1 className="text-[24px] font-bold text-[#0b1c30] tracking-tight mt-0.5">
-            System Monitoring &amp; Infrastructure Health
-          </h1>
-          <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
-            Real-time status of vector databases, NLP inference nodes, API gateways, and municipal queue workers.
+          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">Backend health endpoint</p>
+          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">System monitoring</h1>
+          <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
+            Service states come from the running API. This view does not report unmeasured latency, capacity, or worker counts.
           </p>
         </div>
-
         <button
           type="button"
-          onClick={() => onShowToast('Health Probe Triggered', 'All 18 node ping cycles returned HTTP 200 OK.')}
-          className="px-4 py-2 rounded-lg bg-[#000000] text-[#ffffff] text-[13px] font-semibold hover:bg-[#213145] transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer self-start md:self-auto"
+          onClick={() => void runHealthCheck()}
+          disabled={isChecking}
+          className="inline-flex items-center gap-2 self-start border border-[#006a61] px-4 py-2 text-[13px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:cursor-wait disabled:opacity-50 md:self-auto"
         >
-          <span className="material-symbols-outlined text-[18px]">health_and_safety</span>
-          <span>Run Health Check</span>
+          <span className={`material-symbols-outlined text-[18px] ${isChecking ? 'animate-spin' : ''}`}>refresh</span>
+          <span>{isChecking ? 'Checking...' : 'Run health check'}</span>
         </button>
-      </div>
+      </header>
 
-      {/* Cluster Nodes */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-        <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-[14px] text-[#0b1c30]">Vector Grounding Node #1</span>
-            <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-mono text-[11px] font-semibold">
-              HEALTHY
-            </span>
-          </div>
-          <div className="font-mono text-[12px] text-[#45464d] space-y-1">
-            <div className="flex justify-between">
-              <span>Memory Utilization:</span>
-              <strong className="text-[#0b1c30]">4.2 GB / 16 GB</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>FAISS Index P95:</span>
-              <strong className="text-[#006a61]">42ms</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>Loaded Chunks:</span>
-              <strong className="text-[#0b1c30]">12,410</strong>
-            </div>
-          </div>
-        </div>
+      {error && <p role="alert" className="border-l-2 border-[#ba1a1a] pl-3 text-[13px] text-[#93000a]">{error}</p>}
 
-        <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-[14px] text-[#0b1c30]">Multilingual NLP Node #74</span>
-            <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-mono text-[11px] font-semibold">
-              READY
-            </span>
-          </div>
-          <div className="font-mono text-[12px] text-[#45464d] space-y-1">
-            <div className="flex justify-between">
-              <span>Model State:</span>
-              <strong className="text-[#0b1c30]">Warm (In-Memory)</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>Inference Latency:</span>
-              <strong className="text-[#006a61]">142ms</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>Active Workers:</span>
-              <strong className="text-[#0b1c30]">8 Cores</strong>
-            </div>
-          </div>
+      <section className="space-y-3" aria-label="Current health status">
+        <div className="flex flex-wrap items-center gap-3 border-y border-[#dce9ff] py-4">
+          <span className={`h-2.5 w-2.5 ${health?.status === 'healthy' ? 'bg-[#006a61]' : 'bg-[#ba1a1a]'}`} />
+          <h2 className="text-[17px] font-semibold text-[#0b1c30]">
+            {health ? health.status : isChecking ? 'Checking services' : 'Status unavailable'}
+          </h2>
+          {health && <span className="text-[12px] text-[#76777d]">Environment: {health.environment}</span>}
+          {health && <time className="text-[12px] text-[#76777d]">{health.timestamp}</time>}
         </div>
-
-        <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] space-y-3">
-          <div className="flex items-center justify-between">
-            <span className="font-semibold text-[14px] text-[#0b1c30]">Audit Trail Ledger</span>
-            <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-mono text-[11px] font-semibold">
-              SYNCED
-            </span>
-          </div>
-          <div className="font-mono text-[12px] text-[#45464d] space-y-1">
-            <div className="flex justify-between">
-              <span>Cryptographic Block:</span>
-              <strong className="text-[#0b1c30]">#91,204</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>Integrity Hash:</span>
-              <strong className="text-[#006a61]">SHA-256 Valid</strong>
-            </div>
-            <div className="flex justify-between">
-              <span>Failed Dispatches:</span>
-              <strong className="text-[#006a61]">0</strong>
-            </div>
-          </div>
+        <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+          {services.map(({ key, label }) => {
+            const value = health?.services[key] ?? 'unknown';
+            const isHealthy = value === 'ok' || value === 'ready' || value === 'available_in_memory' || value === 'configured';
+            return (
+              <div key={key} className="flex items-center justify-between gap-3 border-b border-[#eff4ff] py-3">
+                <span className="text-[13px] text-[#45464d]">{label}</span>
+                <span className={`font-mono text-[12px] font-semibold ${isHealthy ? 'text-[#005049]' : 'text-[#93000a]'}`}>{value}</span>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      </section>
     </div>
   );
 };
