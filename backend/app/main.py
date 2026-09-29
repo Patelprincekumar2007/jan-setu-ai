@@ -18,6 +18,7 @@ from app.routers import (
     notifications,
     admin,
     knowledge,
+    requests,
 )
 from app.seed import seed_database
 
@@ -66,6 +67,7 @@ app.include_router(priority.router, prefix=settings.API_V1_STR)
 app.include_router(notifications.router, prefix=settings.API_V1_STR)
 app.include_router(admin.router, prefix=settings.API_V1_STR)
 app.include_router(knowledge.router)
+app.include_router(requests.router)
 
 @app.on_event("startup")
 def on_startup():

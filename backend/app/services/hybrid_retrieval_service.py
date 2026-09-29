@@ -117,9 +117,12 @@ class HybridRetrievalService:
         similarity_score: Optional[float],
         retrieval_method: str,
     ) -> dict[str, Any]:
+        extra_metadata = getattr(evidence, "extra_metadata", None)
+        metadata = extra_metadata if isinstance(extra_metadata, dict) else {}
         return {
             "evidence_id": evidence.evidence_identifier,
             "dataset_id": evidence.dataset_id,
+            "record_id": metadata.get("record_id"),
             "title": evidence.title,
             "content": evidence.description,
             "state": evidence.state,
@@ -128,10 +131,16 @@ class HybridRetrievalService:
             "category": evidence.category,
             "metric_name": evidence.metric_name,
             "metric_value": evidence.metric_value,
+            "unit": metadata.get("unit"),
+            "year": metadata.get("year"),
             "period": evidence.reporting_period,
+            "geographic_level": metadata.get("geographic_level"),
             "source_name": evidence.source_name,
             "source_url": evidence.source_url,
+            "source_reference": metadata.get("source_reference"),
             "publisher": evidence.source_organization,
+            "license": metadata.get("license"),
+            "last_updated": metadata.get("last_updated"),
             "notes": evidence.raw_text,
             "similarity_score": similarity_score,
             "metadata_match_level": metadata_match_level,

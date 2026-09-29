@@ -7,6 +7,7 @@ from app.models.priority import PrioritySignal
 from app.models.notification import Notification
 from app.models.attachment import Attachment
 from app.models.audit import AuditLog
+from app.models.citizen_request import CitizenRequest, RequestEvidenceMatch
 
 __all__ = [
     "User",
@@ -18,5 +19,7 @@ __all__ = [
     "PrioritySignal",
     "Notification",
     "Attachment",
-    "AuditLog"
+    "AuditLog",
+    "CitizenRequest",
+    "RequestEvidenceMatch",
 ]
