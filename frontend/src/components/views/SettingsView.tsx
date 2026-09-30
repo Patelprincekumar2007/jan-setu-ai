@@ -43,17 +43,17 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </h2>
           <div className="flex items-center gap-4 bg-slate-50 p-4 rounded-xl border border-slate-200">
             <img
-              alt="Dr. Anita Sharma profile"
+              alt="Civic Analyst Profile"
               className="w-16 h-16 rounded-full object-cover ring-2 ring-[#00897b]"
               src={ASSETS.profile}
             />
             <div className="space-y-0.5">
-              <h3 className="font-bold text-[17px] text-slate-900">Dr. Anita Sharma</h3>
+              <h3 className="font-bold text-[17px] text-slate-900">Civic Data Analyst</h3>
               <p className="font-mono text-[12px] text-teal-800 font-bold">
-                Badge: CIVIC-RES-409
+                Session: Verified Analyst
               </p>
               <p className="text-[12px] text-slate-500">
-                Senior Civic Researcher, Dharashiv District Observatory
+                Civic Intelligence and Open Data Observatory
               </p>
             </div>
           </div>

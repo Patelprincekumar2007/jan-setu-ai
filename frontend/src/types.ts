@@ -5,12 +5,15 @@ export type NavigationTab =
   | 'evidence-explorer'
   | 'priority-insights'
   | 'data-sources'
+  | 'datasets'
   | 'analytics'
   | 'my-reports'
   | 'how-it-works'
   | 'tech-architecture'
   | 'system-monitoring'
-  | 'settings';
+  | 'settings'
+  | 'privacy-policy'
+  | 'terms';
 
 export type UserRole = 'Citizen' | 'Analyst' | 'Admin';
 

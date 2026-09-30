@@ -184,7 +184,7 @@ export const Header: React.FC<HeaderProps> = ({
           <div className="relative">
             <img
               src={ASSETS.profile}
-              alt="Dr. Anita Sharma"
+              alt="Civic Analyst"
               className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-600/30"
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
@@ -194,10 +194,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div className="hidden xl:flex flex-col text-left leading-tight">
             <span className="font-bold text-[13px] text-slate-900 tracking-tight">
-              Dr. Anita Sharma
+              Civic Data Analyst
             </span>
             <span className="font-mono text-[10px] text-slate-500">
-              Analyst • <span className="text-[#00897b] font-bold">CIVIC-RES-409</span>
+              Session • <span className="text-[#00897b] font-bold">Verified Analyst</span>
             </span>
           </div>
         </div>

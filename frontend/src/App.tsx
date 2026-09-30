@@ -11,7 +11,7 @@ import { Header } from './components/Header';
 import { Toast, ToastMessage } from './components/Toast';
 import { ReportModal } from './components/ReportModal';
 
-// Views
+// Views and Pages
 import { DashboardView } from './components/views/DashboardView';
 import { ReportProblemView } from './components/views/ReportProblemView';
 import { EvidenceExplorerView } from './components/views/EvidenceExplorerView';
@@ -24,11 +24,78 @@ import { HowItWorksView } from './components/views/HowItWorksView';
 import { TechArchitectureView } from './components/views/TechArchitectureView';
 import { SystemMonitoringView } from './components/views/SystemMonitoringView';
 import { SettingsView } from './components/views/SettingsView';
+import { DatasetsPage } from './pages/DatasetsPage';
+import { PrivacyPolicyPage } from './pages/PrivacyPolicyPage';
+import { TermsPage } from './pages/TermsPage';
+
 import { createCitizenRequestApi, CitizenRequestInput, CitizenRequestRecord } from './api/requests';
 import { LanguageContext, LocalizedTree } from './i18n';
 
+export const getTabFromPath = (path: string): NavigationTab => {
+  const cleanPath = path.toLowerCase().replace(/\/$/, '') || '/';
+  switch (cleanPath) {
+    case '/':
+    case '/dashboard':
+      return 'dashboard';
+    case '/submit':
+      return 'report-a-problem';
+    case '/track':
+      return 'my-reports';
+    case '/datasets':
+      return 'datasets';
+    case '/privacy-policy':
+      return 'privacy-policy';
+    case '/terms':
+      return 'terms';
+    case '/explore-issues':
+      return 'explore-issues';
+    case '/evidence-explorer':
+      return 'evidence-explorer';
+    case '/priority-insights':
+      return 'priority-insights';
+    case '/data-sources':
+      return 'data-sources';
+    case '/analytics':
+      return 'analytics';
+    case '/how-it-works':
+      return 'how-it-works';
+    case '/tech-architecture':
+      return 'tech-architecture';
+    case '/system-monitoring':
+      return 'system-monitoring';
+    case '/settings':
+      return 'settings';
+    default:
+      return 'dashboard';
+  }
+};
+
+export const getPathFromTab = (tab: NavigationTab): string => {
+  switch (tab) {
+    case 'dashboard':
+      return '/dashboard';
+    case 'report-a-problem':
+      return '/submit';
+    case 'my-reports':
+      return '/track';
+    case 'datasets':
+      return '/datasets';
+    case 'privacy-policy':
+      return '/privacy-policy';
+    case 'terms':
+      return '/terms';
+    default:
+      return `/${tab}`;
+  }
+};
+
 export default function App() {
-  const [currentTab, setCurrentTab] = useState<NavigationTab>('dashboard');
+  const [currentTab, setCurrentTab] = useState<NavigationTab>(() => {
+    if (typeof window !== 'undefined') {
+      return getTabFromPath(window.location.pathname);
+    }
+    return 'dashboard';
+  });
   const [activeRole, setActiveRole] = useState<UserRole>('Analyst');
   const [language, setLanguage] = useState<AppLanguage>(() => {
     const savedLanguage = localStorage.getItem('nagriklens_language');
@@ -42,6 +109,15 @@ export default function App() {
   const [toast, setToast] = useState<ToastMessage | null>(null);
 
   useEffect(() => {
+    const handlePopState = () => {
+      const tab = getTabFromPath(window.location.pathname);
+      setCurrentTab(tab);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  useEffect(() => {
     document.documentElement.lang = language === 'HI' ? 'hi' : language === 'GU' ? 'gu' : 'en';
     localStorage.setItem('nagriklens_language', language);
   }, [language]);
@@ -49,6 +125,17 @@ export default function App() {
   const handleLanguageChange = (nextLanguage: AppLanguage) => {
     setLanguage(nextLanguage);
     localStorage.setItem('nagriklens_language', nextLanguage);
+  };
+
+  const handleNavigate = (tab: NavigationTab, updateHistory = true) => {
+    setCurrentTab(tab);
+    if (updateHistory && typeof window !== 'undefined') {
+      const targetPath = getPathFromTab(tab);
+      if (window.location.pathname !== targetPath) {
+        window.history.pushState(null, '', targetPath);
+      }
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const showToast = (title: string, desc: string, type: 'success' | 'info' | 'warning' = 'info') => {
@@ -104,10 +191,7 @@ export default function App() {
       {/* Sidebar Navigation */}
       <Sidebar
         currentTab={currentTab}
-        onNavigate={(tab) => {
-          setCurrentTab(tab);
-          window.scrollTo({ top: 0, behavior: 'smooth' });
-        }}
+        onNavigate={handleNavigate}
         activeRole={activeRole}
         onRoleChange={setActiveRole}
         isMobileOpen={isMobileMenuOpen}
@@ -120,10 +204,7 @@ export default function App() {
         <Header
           language={language}
           onLanguageChange={handleLanguageChange}
-          onNavigate={(tab) => {
-            setCurrentTab(tab);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          }}
+          onNavigate={handleNavigate}
           onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
           onOpenReportModal={() => setIsReportModalOpen(true)}
         />
@@ -134,10 +215,7 @@ export default function App() {
           {currentTab === 'dashboard' && (
             <DashboardView
               reports={reports}
-              onNavigate={(tab) => {
-                setCurrentTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onNavigate={handleNavigate}
               onOpenReportModal={() => setIsReportModalOpen(true)}
               onSelectReportForInspection={(report) => setSelectedReport(report)}
               onShowToast={showToast}
@@ -146,10 +224,7 @@ export default function App() {
 
           {currentTab === 'report-a-problem' && (
             <ReportProblemView
-              onNavigate={(tab) => {
-                setCurrentTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onNavigate={handleNavigate}
               onSubmitRequest={handleCreateCitizenRequest}
               onShowToast={showToast}
             />
@@ -164,10 +239,7 @@ export default function App() {
 
           {currentTab === 'explore-issues' && (
             <ExploreIssuesView
-              onNavigate={(tab) => {
-                setCurrentTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onNavigate={handleNavigate}
               onShowToast={showToast}
             />
           )}
@@ -180,6 +252,10 @@ export default function App() {
             <DataSourcesView onShowToast={showToast} />
           )}
 
+          {currentTab === 'datasets' && (
+            <DatasetsPage />
+          )}
+
           {currentTab === 'analytics' && (
             <AnalyticsView onShowToast={showToast} />
           )}
@@ -188,10 +264,7 @@ export default function App() {
             <MyReportsView
               reports={reports}
               requests={citizenRequests}
-              onNavigate={(tab) => {
-                setCurrentTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onNavigate={handleNavigate}
               onSelectReport={(report) => setSelectedReport(report)}
               onOpenReportModal={() => setIsReportModalOpen(true)}
             />
@@ -199,10 +272,7 @@ export default function App() {
 
           {currentTab === 'how-it-works' && (
             <HowItWorksView
-              onNavigate={(tab) => {
-                setCurrentTab(tab);
-                window.scrollTo({ top: 0, behavior: 'smooth' });
-              }}
+              onNavigate={handleNavigate}
             />
           )}
 
@@ -220,6 +290,14 @@ export default function App() {
               onRoleChange={setActiveRole}
               onShowToast={showToast}
             />
+          )}
+
+          {currentTab === 'privacy-policy' && (
+            <PrivacyPolicyPage onNavigate={handleNavigate} />
+          )}
+
+          {currentTab === 'terms' && (
+            <TermsPage onNavigate={handleNavigate} />
           )}
           </LocalizedTree>
         </main>

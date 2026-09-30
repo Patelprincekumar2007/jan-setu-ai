@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { CitizenReport, NavigationTab } from '../../types';
 import { useT } from '../../i18n';
 import {
@@ -25,6 +25,17 @@ interface DashboardViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
 }
 
+const CATEGORY_COLORS = [
+  '#00897b',
+  '#0284c7',
+  '#f59e0b',
+  '#ef4444',
+  '#8b5cf6',
+  '#10b981',
+  '#ec4899',
+  '#64748b',
+];
+
 export const DashboardView: React.FC<DashboardViewProps> = ({
   reports,
   onNavigate,
@@ -45,7 +56,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     'Other': true,
   });
   const [activeMapPin, setActiveMapPin] = useState<any | null>(null);
-  const [timeframe, setTimeframe] = useState('This Month');
+  const [timeframe, setTimeframe] = useState('Active Feeds');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -107,69 +118,139 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     }
   };
 
-  // Map incident pins
-  const mapIncidents = [
-    { id: 1, x: 210, y: 155, category: 'Roads & Transport', ward: 'Ward 3', title: 'Broken street light', severity: 'Critical', color: '#ef4444', count: 6 },
-    { id: 2, x: 260, y: 130, category: 'Roads & Transport', ward: 'Ward 3', title: 'Pothole cave-in', severity: 'Critical', color: '#ef4444', count: 12 },
-    { id: 3, x: 340, y: 175, category: 'Water Supply', ward: 'Ward 5', title: 'Pipeline pressure drop', severity: 'Moderate', color: '#0ea5e9', count: 4 },
-    { id: 4, x: 375, y: 220, category: 'Sanitation', ward: 'Ward 5', title: 'Garbage dump overflow', severity: 'Moderate', color: '#10b981', count: 2 },
-    { id: 5, x: 180, y: 240, category: 'Water Supply', ward: 'Ward 7', title: 'Main valve leak', severity: 'Moderate', color: '#0ea5e9', count: 3 },
-    { id: 6, x: 235, y: 275, category: 'Drainage', ward: 'Ward 7', title: 'Storm drain clogged', severity: 'Moderate', color: '#f59e0b', count: 1 },
-    { id: 7, x: 420, y: 250, category: 'Street Lights', ward: 'Ward 11', title: 'Junction darkness', severity: 'Low', color: '#eab308', count: 2 },
-  ];
+  // Real KPI Computations
+  const totalReportsCount = overview?.total_requests ?? reports.length;
+  
+  const activeReviewCount = reports.filter(
+    (r) => r.status.toLowerCase().includes('active') || r.status.toLowerCase().includes('review')
+  ).length;
+    
+  const resolvedCount = reports.filter(
+    (r) => r.status.toLowerCase().includes('resolved') || r.status.toLowerCase().includes('actioned')
+  ).length;
+
+  const resolutionRateFormatted = totalReportsCount > 0
+    ? `${Math.round((resolvedCount / totalReportsCount) * 100)}%`
+    : 'No data available';
+
+  const criticalCount = (severity?.counts?.['CRITICAL'] || severity?.counts?.['Critical'] || severity?.counts?.['HIGH'] || severity?.counts?.['High']) ??
+    reports.filter((r) => r.priorityScore >= 70).length;
+
+  const moderateCount = (severity?.counts?.['MODERATE'] || severity?.counts?.['Moderate'] || severity?.counts?.['MEDIUM'] || severity?.counts?.['Medium']) ??
+    reports.filter((r) => r.priorityScore >= 40 && r.priorityScore < 70).length;
+
+  const lowCount = (severity?.counts?.['LOW'] || severity?.counts?.['Low']) ??
+    reports.filter((r) => r.priorityScore < 40).length;
+
+  const totalSeverityCount = criticalCount + moderateCount + lowCount || totalReportsCount || 1;
+  const criticalPct = Math.round((criticalCount / totalSeverityCount) * 100);
+  const moderatePct = Math.round((moderateCount / totalSeverityCount) * 100);
+  const lowPct = 100 - criticalPct - moderatePct;
+
+  const publicDatasetsCount = datasets?.total ?? datasets?.datasets?.length ?? 4;
+
+  const totalRecordsCount = useMemo(() => {
+    if (datasets?.datasets && datasets.datasets.length > 0) {
+      return datasets.datasets.reduce((sum, item) => sum + (item.record_count || 0), 0);
+    }
+    return 0;
+  }, [datasets]);
+
+  const validatedRatio = useMemo(() => {
+    if (evidenceCoverage && typeof evidenceCoverage.coverage_percentage === 'number') {
+      return evidenceCoverage.coverage_percentage;
+    }
+    if (overview && overview.total_requests > 0) {
+      return Number(((overview.requests_with_evidence / overview.total_requests) * 100).toFixed(1));
+    }
+    return 100;
+  }, [evidenceCoverage, overview]);
+
+  // Dynamic Category Breakdown for Donut Chart
+  const categoryChartData = useMemo(() => {
+    if (categories?.categories && categories.categories.length > 0) {
+      const total = categories.categories.reduce((sum, c) => sum + c.request_count, 0) || 1;
+      return categories.categories.map((c, index) => ({
+        name: c.category,
+        count: c.request_count,
+        percentage: Math.round((c.request_count / total) * 100),
+        color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+      }));
+    }
+    // Fallback computed from reports
+    const counts: Record<string, number> = {};
+    reports.forEach((r) => {
+      counts[r.category] = (counts[r.category] || 0) + 1;
+    });
+    const entries = Object.entries(counts);
+    const total = reports.length || 1;
+    return entries.map(([name, count], index) => ({
+      name,
+      count,
+      percentage: Math.round((count / total) * 100),
+      color: CATEGORY_COLORS[index % CATEGORY_COLORS.length],
+    }));
+  }, [categories, reports]);
+
+  // SVG Donut segments computation
+  const donutSegments = useMemo(() => {
+    const circumference = 2 * Math.PI * 38; // approx 238.76
+    let accumulatedOffset = 0;
+    return categoryChartData.map((item) => {
+      const strokeLength = (item.percentage / 100) * circumference;
+      const offset = accumulatedOffset;
+      accumulatedOffset += strokeLength;
+      return {
+        ...item,
+        dashArray: `${strokeLength} ${circumference}`,
+        dashOffset: -offset,
+      };
+    });
+  }, [categoryChartData]);
+
+  // Dynamic Map Incident Pins
+  const mapIncidents = useMemo(() => {
+    if (reports.length > 0) {
+      return reports.slice(0, 7).map((rep, idx) => {
+        const positions = [
+          { x: 210, y: 155 },
+          { x: 260, y: 130 },
+          { x: 340, y: 175 },
+          { x: 375, y: 220 },
+          { x: 180, y: 240 },
+          { x: 235, y: 275 },
+          { x: 420, y: 250 },
+        ];
+        const pos = positions[idx % positions.length];
+        const color = rep.priorityScore >= 70 ? '#ef4444' : rep.priorityScore >= 40 ? '#0ea5e9' : '#10b981';
+        return {
+          id: rep.id,
+          x: pos.x,
+          y: pos.y,
+          category: rep.category,
+          ward: rep.ward,
+          title: rep.title,
+          severity: rep.priorityScore >= 70 ? 'Critical' : rep.priorityScore >= 40 ? 'Moderate' : 'Low',
+          color,
+          count: 1,
+        };
+      });
+    }
+    return [];
+  }, [reports]);
 
   const filteredIncidents = mapIncidents.filter((inc) => {
     if (selectedCategoryFilters['All Issues']) return true;
     return selectedCategoryFilters[inc.category] ?? true;
   });
 
-  // Recent reports feed
-  const recentReports = [
-    {
-      id: 'rep-01',
-      title: 'Broken street light',
-      ward: 'Ward 3',
-      time: '2h ago',
-      severity: 'Critical',
-      severityColor: 'bg-rose-50 text-rose-700 border-rose-200',
-      thumbnail: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'rep-02',
-      title: 'Water leakage on road',
-      ward: 'Ward 7',
-      time: '4h ago',
-      severity: 'Moderate',
-      severityColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      thumbnail: 'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'rep-03',
-      title: 'Garbage overflow',
-      ward: 'Ward 5',
-      time: '6h ago',
-      severity: 'Moderate',
-      severityColor: 'bg-amber-50 text-amber-700 border-amber-200',
-      thumbnail: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=150&auto=format&fit=crop&q=80',
-    },
-    {
-      id: 'rep-04',
-      title: 'Pothole near school',
-      ward: 'Ward 11',
-      time: '9h ago',
-      severity: 'Low',
-      severityColor: 'bg-sky-50 text-sky-700 border-sky-200',
-      thumbnail: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=150&auto=format&fit=crop&q=80',
-    },
-  ];
-
   return (
     <div className="p-4 lg:p-6 max-w-[1680px] mx-auto w-full flex flex-col gap-5 text-slate-900 font-sans">
       {/* 1. HERO BANNER: PUBLIC INTELLIGENCE HUB */}
       <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#122e43] via-[#1b3d58] to-[#244b6c] shadow-lg p-6 lg:p-7 text-white border border-[#1b3d58]">
-        {/* Architectural panorama backdrop */}
+        {/* Architectural backdrop */}
         <div 
-          className="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none mix-blend-luminosity"
+          className="absolute inset-0 bg-cover bg-center opacity-25 pointer-events-none mix-blend-luminosity"
           style={{
             backgroundImage: `url('https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?w=1600&auto=format&fit=crop&q=80')`,
           }}
@@ -185,8 +266,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   PUBLIC INTELLIGENCE HUB • GeoID: MH-DHA-2024
                 </span>
               </div>
-              <h1 className="text-[28px] lg:text-[32px] font-extrabold text-white tracking-tight flex items-center gap-2">
-                Good morning, Anita <span className="text-[26px]">👋</span>
+              <h1 className="text-[26px] lg:text-[30px] font-extrabold text-white tracking-tight">
+                Civic Intelligence Workspace
               </h1>
               <p className="text-[13px] text-slate-200 max-w-2xl leading-relaxed">
                 Track community infrastructure reports, verify public data coverage, and understand evidence-grounded civic priorities.
@@ -194,13 +275,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
 
             <div className="hidden lg:flex flex-col items-end text-right">
-              <p className="text-[11px] italic font-medium text-slate-300 max-w-xs leading-tight">
-                "From citizen voices to cleaner, safer, stronger communities."
-              </p>
+              <span className="px-3 py-1 rounded-full bg-white/10 text-teal-200 text-xs font-mono font-semibold border border-white/20">
+                Multi-Sector Open Data Grounding
+              </span>
             </div>
           </div>
 
-          {/* 5-Step Process Pipeline Stepper (White frosted cards) */}
+          {/* 5-Step Process Pipeline Stepper */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
             {/* Step 1 */}
             <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 border border-white/80 flex items-center justify-between shadow-sm">
@@ -214,7 +295,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[9px] font-bold">
-                ● Live
+                Live
               </span>
             </div>
 
@@ -230,7 +311,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono text-[9px] font-bold">
-                ● Processing
+                Processing
               </span>
             </div>
 
@@ -246,7 +327,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[9px] font-bold">
-                ● Ready
+                Ready
               </span>
             </div>
 
@@ -262,7 +343,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[9px] font-bold">
-                ● Verified
+                Verified
               </span>
             </div>
 
@@ -278,7 +359,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 </div>
               </div>
               <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-mono text-[9px] font-bold">
-                ● Insights
+                Insights
               </span>
             </div>
           </div>
@@ -318,7 +399,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
           <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-slate-500 mr-1">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
-            <span>Last updated: Just now</span>
+            <span>Telemetry: Live</span>
           </div>
 
           <button
@@ -350,7 +431,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
         </div>
       </div>
 
-      {/* 3. TOP 4 KEY METRIC KPI CARDS (Crisp White) */}
+      {/* 3. TOP 4 KEY METRIC KPI CARDS */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Card 1: Citizen Tracker */}
         <div 
@@ -370,16 +451,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="mt-3">
             <div className="flex items-baseline gap-2">
               <span className="text-[32px] font-black text-slate-900 leading-none">
-                {overview ? overview.total_requests : (loading ? '-' : 4)}
+                {loading ? '-' : totalReportsCount}
               </span>
               <span className="text-[12px] font-semibold text-slate-600">Submitted Reports</span>
             </div>
             <div className="flex items-center gap-3 mt-2 text-[11px]">
               <span className="flex items-center gap-1 text-sky-700 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" /> 2 Active Under Review
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" /> {activeReviewCount} Under Review
               </span>
               <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> 2 Resolved
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> {resolvedCount} Resolved
               </span>
             </div>
           </div>
@@ -387,9 +468,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
             <div className="flex items-center gap-1.5">
               <span>Resolution rate</span>
-              <span className="font-bold text-slate-900">50%</span>
+              <span className="font-bold text-slate-900">{resolutionRateFormatted}</span>
             </div>
-            <div className="font-mono text-slate-600 font-semibold">SLA: 48h avg</div>
+            <div className="font-mono text-slate-600 font-semibold">Live Intake</div>
           </div>
         </div>
 
@@ -410,21 +491,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="mt-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-[32px] font-black text-slate-900 leading-none">28</span>
+              <span className="text-[32px] font-black text-slate-900 leading-none">
+                {loading ? '-' : totalReportsCount}
+              </span>
               <span className="text-[12px] font-semibold text-slate-600">Active Incidents</span>
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Across Dharashiv District (Ward 1 - 12)</p>
+            <p className="text-[11px] text-slate-500 mt-1">Dharashiv District Active Boundary</p>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
             <div className="w-full h-2 rounded-full bg-slate-100 flex overflow-hidden">
-              <div className="bg-rose-500 h-full" style={{ width: '28%' }} />
-              <div className="bg-amber-500 h-full" style={{ width: '72%' }} />
+              <div className="bg-rose-500 h-full" style={{ width: `${criticalPct}%` }} />
+              <div className="bg-amber-500 h-full" style={{ width: `${moderatePct}%` }} />
+              <div className="bg-sky-500 h-full" style={{ width: `${lowPct}%` }} />
             </div>
             <div className="flex items-center justify-between text-[10px] text-slate-600 font-mono font-semibold">
-              <span className="text-rose-600">● 8 Critical</span>
-              <span className="text-amber-600">● 20 Moderate</span>
-              <span className="text-slate-400">● 0 Low</span>
+              <span className="text-rose-600">• {criticalCount} Critical</span>
+              <span className="text-amber-600">• {moderateCount} Moderate</span>
+              <span className="text-sky-600">• {lowCount} Low</span>
             </div>
           </div>
         </div>
@@ -446,18 +530,19 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="mt-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-[32px] font-black text-slate-900 leading-none">14</span>
+              <span className="text-[32px] font-black text-slate-900 leading-none">
+                {loading ? '-' : publicDatasetsCount}
+              </span>
               <span className="text-[12px] font-semibold text-slate-600">Public Datasets</span>
             </div>
-            <p className="text-[11px] text-slate-500 mt-1">Linked OGD, JJM, PMGSY & NHM Feeds</p>
+            <p className="text-[11px] text-slate-500 mt-1">Linked JJM, NHM, SBM & PMGSY</p>
           </div>
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
             <div className="flex items-center gap-1.5 font-bold font-mono text-slate-900">
-              <span>12,410 Records</span>
-              <span className="text-emerald-600 text-[10px]">↑ 12%</span>
+              <span>{totalRecordsCount > 0 ? `${totalRecordsCount.toLocaleString()} Records` : 'Active Feed'}</span>
             </div>
-            <span className="text-[10px] text-slate-400">Updated 1h ago</span>
+            <span className="text-[10px] text-teal-700 font-semibold">Verified Live</span>
           </div>
         </div>
 
@@ -478,7 +563,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="mt-3">
             <div className="flex items-baseline gap-2">
-              <span className="text-[32px] font-black text-slate-900 leading-none">84.2%</span>
+              <span className="text-[32px] font-black text-slate-900 leading-none">
+                {loading ? '-' : `${validatedRatio}%`}
+              </span>
               <span className="text-[12px] font-semibold text-slate-600">Validated Ratio</span>
             </div>
             <p className="text-[11px] text-slate-500 mt-1">Reports with verifiable public records</p>
@@ -486,21 +573,21 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
           <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
             <div className="w-full h-2 rounded-full bg-slate-100 flex overflow-hidden">
-              <div className="bg-teal-600 h-full" style={{ width: '84.2%' }} />
-              <div className="bg-slate-300 h-full" style={{ width: '15.8%' }} />
+              <div className="bg-teal-600 h-full" style={{ width: `${Math.min(100, Math.max(0, validatedRatio))}%` }} />
+              <div className="bg-slate-300 h-full" style={{ width: `${Math.max(0, 100 - validatedRatio)}%` }} />
             </div>
             <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
-              <span className="font-bold text-teal-800">Verified Ground Truth 84.2%</span>
-              <span>15.8% Unincorporated</span>
+              <span className="font-bold text-teal-800">Verified Ground Truth {validatedRatio}%</span>
+              <span>{Math.max(0, 100 - validatedRatio).toFixed(1)}% Unlinked</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 4. MAIN BOTTOM 3 WIDGETS */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-        {/* Widget 1: Live Issue Map (5 cols) */}
-        <div className="lg:col-span-5 saas-card p-5 flex flex-col justify-between gap-4">
+      {/* 4. MAIN BOTTOM 3 WIDGETS (Responsive Grid) */}
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-5 items-start">
+        {/* Widget 1: Live Issue Map (5 cols on xl) */}
+        <div className="xl:col-span-5 saas-card p-5 flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-teal-700 text-[20px]">map</span>
@@ -511,7 +598,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('explore-issues')}
-              className="text-slate-400 hover:text-slate-700 p-1"
+              className="text-slate-400 hover:text-slate-700 p-1 cursor-pointer"
               title="Expand full map"
             >
               <span className="material-symbols-outlined text-[18px]">fullscreen</span>
@@ -524,7 +611,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => setMapMode('map')}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   mapMode === 'map' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -533,7 +620,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <button
                 type="button"
                 onClick={() => setMapMode('satellite')}
-                className={`px-2.5 py-1 rounded-md transition-all ${
+                className={`px-2.5 py-1 rounded-md transition-all cursor-pointer ${
                   mapMode === 'satellite' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
@@ -555,7 +642,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 strokeDasharray="4 2"
               />
 
-              {/* Roads / Main Arteries */}
+              {/* Main Arteries */}
               <path
                 d="M 60,140 Q 200,160 270,160 T 510,180"
                 fill="none"
@@ -615,15 +702,14 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
         </div>
 
-        {/* Widget 2: Top Issues by Category (Donut Chart) (3.5 cols) */}
-        <div className="lg:col-span-3.5 saas-card p-5 flex flex-col justify-between gap-4">
+        {/* Widget 2: Top Issues by Category (Donut Chart) (4 cols on xl) */}
+        <div className="xl:col-span-4 saas-card p-5 flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-[15px] text-slate-900">
               Top Issues by Category
             </h2>
             <div className="flex items-center gap-1 text-[11px] bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700 font-semibold border border-slate-200">
               <span>{timeframe}</span>
-              <span className="material-symbols-outlined text-[14px]">expand_more</span>
             </div>
           </div>
 
@@ -634,69 +720,56 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {/* Background Ring */}
                 <circle cx="50" cy="50" r="38" fill="none" stroke="#f1f5f9" strokeWidth="14" />
                 
-                {/* Segment 1: Roads & Transport (32%) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#ef4444" strokeWidth="14"
-                  strokeDasharray="76.4 238.7" strokeDashoffset="0" />
-                
-                {/* Segment 2: Water Supply (25%) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#0ea5e9" strokeWidth="14"
-                  strokeDasharray="59.7 238.7" strokeDashoffset="-76.4" />
-                
-                {/* Segment 3: Sanitation (18%) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#10b981" strokeWidth="14"
-                  strokeDasharray="43.0 238.7" strokeDashoffset="-136.1" />
-
-                {/* Segment 4: Street Lights (14%) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#eab308" strokeWidth="14"
-                  strokeDasharray="33.4 238.7" strokeDashoffset="-179.1" />
-
-                {/* Segment 5: Drainage (7%) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#f97316" strokeWidth="14"
-                  strokeDasharray="16.7 238.7" strokeDashoffset="-212.5" />
-
-                {/* Segment 6: Other (4%) */}
-                <circle cx="50" cy="50" r="38" fill="none" stroke="#a855f7" strokeWidth="14"
-                  strokeDasharray="9.5 238.7" strokeDashoffset="-229.2" />
+                {donutSegments.map((segment) => (
+                  <circle
+                    key={segment.name}
+                    cx="50"
+                    cy="50"
+                    r="38"
+                    fill="none"
+                    stroke={segment.color}
+                    strokeWidth="14"
+                    strokeDasharray={segment.dashArray}
+                    strokeDashoffset={segment.dashOffset}
+                  />
+                ))}
               </svg>
 
               <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="text-[26px] font-black text-slate-900 leading-none">28</span>
-                <span className="text-[10px] uppercase font-bold text-slate-500 font-mono">Total Incidents</span>
+                <span className="text-[26px] font-black text-slate-900 leading-none">
+                  {totalReportsCount}
+                </span>
+                <span className="text-[10px] uppercase font-bold text-slate-500 font-mono">
+                  Total Reports
+                </span>
               </div>
             </div>
           </div>
 
           {/* Donut Legend List */}
           <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] pt-2 border-t border-slate-100">
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#ef4444]" />Roads & Transport</span>
-              <span className="font-bold text-slate-900">32% <span className="text-slate-400 font-normal">(9)</span></span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#0ea5e9]" />Water Supply</span>
-              <span className="font-bold text-slate-900">25% <span className="text-slate-400 font-normal">(7)</span></span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#10b981]" />Sanitation</span>
-              <span className="font-bold text-slate-900">18% <span className="text-slate-400 font-normal">(5)</span></span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#eab308]" />Street Lights</span>
-              <span className="font-bold text-slate-900">14% <span className="text-slate-400 font-normal">(4)</span></span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#f97316]" />Drainage</span>
-              <span className="font-bold text-slate-900">7% <span className="text-slate-400 font-normal">(2)</span></span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#a855f7]" />Other</span>
-              <span className="font-bold text-slate-900">4% <span className="text-slate-400 font-normal">(1)</span></span>
-            </div>
+            {categoryChartData.length > 0 ? (
+              categoryChartData.map((cat) => (
+                <div key={cat.name} className="flex items-center justify-between">
+                  <span className="flex items-center gap-1.5 truncate">
+                    <span className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: cat.color }} />
+                    <span className="truncate">{cat.name}</span>
+                  </span>
+                  <span className="font-bold text-slate-900 shrink-0 ml-1">
+                    {cat.percentage}% <span className="text-slate-400 font-normal">({cat.count})</span>
+                  </span>
+                </div>
+              ))
+            ) : (
+              <div className="col-span-2 text-center text-slate-400 py-1">
+                No category data available
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Widget 3: Recent Citizen Reports (Photographic Feed) (3.5 cols) */}
-        <div className="lg:col-span-3.5 saas-card p-5 flex flex-col justify-between gap-4">
+        {/* Widget 3: Recent Citizen Reports (3 cols on xl) */}
+        <div className="xl:col-span-3 saas-card p-5 flex flex-col justify-between gap-4">
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-[15px] text-slate-900">
               Recent Citizen Reports
@@ -704,7 +777,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <button
               type="button"
               onClick={() => onNavigate('my-reports')}
-              className="text-[12px] font-bold text-teal-700 hover:underline flex items-center gap-1"
+              className="text-[12px] font-bold text-teal-700 hover:underline flex items-center gap-1 cursor-pointer"
             >
               <span>View All</span>
               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
@@ -712,33 +785,36 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="flex flex-col gap-2.5">
-            {recentReports.map((item) => (
+            {reports.slice(0, 4).map((item) => (
               <div
                 key={item.id}
                 onClick={() => {
-                  const match = reports.find((r) => r.title.toLowerCase().includes(item.title.toLowerCase())) || reports[0];
-                  onSelectReportForInspection(match);
+                  onSelectReportForInspection(item);
                   onNavigate('evidence-explorer');
                 }}
                 className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-all border border-slate-100 hover:border-slate-200 cursor-pointer"
               >
-                <div className="flex items-center gap-3">
-                  <img
-                    src={item.thumbnail}
-                    alt={item.title}
-                    className="w-11 h-11 rounded-lg object-cover border border-slate-200"
-                  />
-                  <div className="flex flex-col">
-                    <span className="font-bold text-[13px] text-slate-900">{item.title}</span>
-                    <span className="text-[11px] text-slate-500">{item.ward} • {item.time}</span>
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-9 h-9 rounded-lg bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-700 shrink-0">
+                    <span className="material-symbols-outlined text-[18px]">description</span>
+                  </div>
+                  <div className="flex flex-col min-w-0">
+                    <span className="font-bold text-[12px] text-slate-900 truncate">{item.title}</span>
+                    <span className="text-[10px] text-slate-500 truncate">{item.ward} • {item.timestamp}</span>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.severityColor}`}>
-                    {item.severity}
+                <div className="flex items-center gap-1.5 shrink-0 ml-2">
+                  <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${
+                    item.priorityScore >= 70
+                      ? 'bg-rose-50 text-rose-700 border-rose-200'
+                      : item.priorityScore >= 40
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-sky-50 text-sky-700 border-sky-200'
+                  }`}>
+                    {item.priorityScore >= 70 ? 'Critical' : item.priorityScore >= 40 ? 'Moderate' : 'Low'}
                   </span>
-                  <span className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+                  <span className="material-symbols-outlined text-[14px] text-slate-400">chevron_right</span>
                 </div>
               </div>
             ))}
