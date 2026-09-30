@@ -1,6 +1,12 @@
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
+const RAW_API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000/api/v1';
 
-async function fetchFromBase<T>(baseUrl: string, endpoint: string, options: RequestInit): Promise<T> {
+function normalizeUrl(baseUrl: string, endpoint: string): string {
+  const cleanBase = baseUrl.trim().replace(/\/+$/, '');
+  const cleanEndpoint = endpoint.trim().startsWith('/') ? endpoint.trim() : `/${endpoint.trim()}`;
+  return `${cleanBase}${cleanEndpoint}`;
+}
+
+async function fetchFromBase<T>(baseUrl: string, endpoint: string, options: RequestInit = {}): Promise<T> {
   const token = localStorage.getItem('nagriklens_token');
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -11,7 +17,8 @@ async function fetchFromBase<T>(baseUrl: string, endpoint: string, options: Requ
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${baseUrl}${endpoint}`, {
+  const targetUrl = normalizeUrl(baseUrl, endpoint);
+  const response = await fetch(targetUrl, {
     ...options,
     headers,
   });
@@ -25,10 +32,10 @@ async function fetchFromBase<T>(baseUrl: string, endpoint: string, options: Requ
 }
 
 export async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  return fetchFromBase(API_BASE_URL, endpoint, options);
+  return fetchFromBase(RAW_API_BASE_URL, endpoint, options);
 }
 
 export async function apiFetchRoot<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
-  const rootUrl = API_BASE_URL.replace(/\/api\/v1\/?$/, '');
+  const rootUrl = RAW_API_BASE_URL.replace(/\/api\/v1\/?$/, '').replace(/\/api\/?$/, '');
   return fetchFromBase(rootUrl, endpoint, options);
 }

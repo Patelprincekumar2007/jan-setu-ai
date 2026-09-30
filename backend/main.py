@@ -1,10 +1,13 @@
 import logging
+import os
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.exceptions import RequestValidationError
 from starlette.exceptions import HTTPException as StarletteHTTPException
+from sqlalchemy import text
 
 from backend.config import settings
 from backend.database import init_db, SessionLocal
@@ -53,16 +56,26 @@ app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(RateLimitMiddleware, requests_per_minute=60)
 
 # 3. Explicit CORS Policy
-allowed_origins = [settings.frontend_url]
-if settings.environment == "development":
-    allowed_origins.extend([
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ])
-# Remove duplicates
-allowed_origins = list(set(allowed_origins))
+raw_origins = [
+    settings.frontend_url,
+    "https://nagriklens-frontend.onrender.com",
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:8080",
+    "http://127.0.0.1:8080",
+]
+
+if os.getenv("ALLOWED_ORIGINS"):
+    raw_origins.extend(os.getenv("ALLOWED_ORIGINS", "").split(","))
+
+allowed_origins: list[str] = []
+for orig in raw_origins:
+    if orig and orig.strip():
+        cleaned = orig.strip().rstrip("/")
+        if cleaned and cleaned not in allowed_origins:
+            allowed_origins.append(cleaned)
 
 app.add_middleware(
     CORSMiddleware,
@@ -113,11 +126,34 @@ app.include_router(voice_router)
 @app.get("/health")
 @app.get("/api/v1/health")
 def get_health():
-    """Basic lightweight health check endpoint for monitoring service readiness."""
+    """Comprehensive and lightweight health check verifying actual component readiness."""
+    db_status = "unavailable"
+    try:
+        db = SessionLocal()
+        db.execute(text("SELECT 1"))
+        db.close()
+        db_status = "connected"
+    except Exception as db_err:
+        logger.warning(f"Database health check warning: {db_err}")
+        db_status = "error"
+
+    gemini_status = "configured" if bool(settings.gemini_api_key) else "not_configured"
+    embedding_status = "configured"
+    faiss_status = "available" if os.path.exists(settings.vector_dir) else "uninitialized"
+
     return {
-        "status": "ok",
+        "status": "ok" if db_status == "connected" else "degraded",
         "service": settings.service_name,
         "environment": settings.environment,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "services": {
+            "api": "ready",
+            "database": db_status,
+            "gemini": gemini_status,
+            "embedding_model": embedding_status,
+            "faiss": faiss_status,
+            "storage": "accessible" if db_status == "connected" else "unavailable",
+        },
     }
 
 

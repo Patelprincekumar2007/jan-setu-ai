@@ -15,7 +15,18 @@ export interface SystemHealth {
   };
 }
 
-export async function fetchHealthApi(): Promise<SystemHealth> {
-  return apiFetchRoot<SystemHealth>('/health');
+export async function fetchHealthApi(retries = 2, delayMs = 1500): Promise<SystemHealth> {
+  let lastError: unknown;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await apiFetchRoot<SystemHealth>('/health');
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+      }
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Health endpoint could not be reached.');
 }
 
