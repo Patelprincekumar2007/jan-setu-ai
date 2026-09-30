@@ -1,27 +1,38 @@
-import { apiFetch } from './client';
+import { apiFetchRoot } from './client';
 
-export interface Dataset {
-  id: string;
-  name: string;
-  organization: string;
-  description?: string;
-  source_url?: string;
-  dataset_identifier: string;
-  category: string;
+export interface DatasetItem {
+  dataset_id: string;
+  title: string;
+  description?: string | null;
+  source_name: string;
+  source_url?: string | null;
+  publisher?: string | null;
+  data_type: string;
   geographic_scope: string;
-  time_period?: string;
-  record_count: number;
+  geographic_level: string;
+  category: string;
+  year?: number | null;
+  period?: string | null;
+  last_updated?: string | null;
+  license: string;
   ingestion_status: string;
-  verification_status: string;
-  is_demo: string;
+  record_count: number;
+  retrieval_method?: string | null;
+  source_format?: string | null;
+  notes?: string | null;
+  ingested_at?: string | null;
   created_at: string;
-  updated_at: string;
 }
 
-export async function fetchDatasetsApi(): Promise<Dataset[]> {
-  return apiFetch('/datasets');
+export interface DatasetListResponse {
+  total: number;
+  datasets: DatasetItem[];
 }
 
-export async function fetchDatasetByIdApi(datasetId: string): Promise<Dataset> {
-  return apiFetch(`/datasets/${datasetId}`);
+export async function fetchDatasetsApi(): Promise<DatasetListResponse> {
+  return apiFetchRoot('/api/datasets');
+}
+
+export async function fetchDatasetByIdApi(datasetId: string): Promise<DatasetItem> {
+  return apiFetchRoot(`/api/datasets/${datasetId}`);
 }

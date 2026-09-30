@@ -1,16 +1,16 @@
 import React, { useEffect, useState } from 'react';
-import { Dataset, fetchDatasetsApi } from '../../api/datasets';
+import { DatasetItem, fetchDatasetsApi } from '../../api/datasets';
 import { useT } from '../../i18n';
 
 interface DataSourcesViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
 }
 
-const categories = ['All', 'Water', 'Road', 'Health', 'Education', 'Other'];
+const categories = ['All', 'Water', 'Road', 'Health', 'Sanitation', 'Other'];
 
 export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast }) => {
   const t = useT();
-  const [datasets, setDatasets] = useState<Dataset[]>([]);
+  const [datasets, setDatasets] = useState<DatasetItem[]>([]);
   const [filterCategory, setFilterCategory] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
   const [isReloading, setIsReloading] = useState(false);
@@ -20,9 +20,9 @@ export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast })
     if (announce) setIsReloading(true);
     try {
       const result = await fetchDatasetsApi();
-      setDatasets(result);
+      setDatasets(result.datasets);
       setError(null);
-      if (announce) onShowToast('Catalog refreshed', `${result.length} stored dataset records loaded.`);
+      if (announce) onShowToast('Catalog refreshed', `${result.total} stored dataset records loaded.`);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'The dataset catalog could not be loaded.');
     } finally {
@@ -83,26 +83,26 @@ export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast })
 
       <section className="grid grid-cols-1 gap-x-8 md:grid-cols-2" aria-label="Registered datasets">
         {filtered.map((dataset) => (
-          <article key={dataset.id} className="space-y-3 border-y border-[#dce9ff] py-4">
+          <article key={dataset.dataset_id} className="space-y-3 border-y border-[#dce9ff] py-4">
             <div className="flex flex-wrap items-start justify-between gap-2">
               <div className="min-w-0">
-                <p className="font-mono text-[11px] text-[#006a61]">{dataset.dataset_identifier}</p>
-                <h2 className="mt-1 text-[15px] font-semibold text-[#0b1c30]">{dataset.name}</h2>
+                <p className="font-mono text-[11px] text-[#006a61]">{dataset.dataset_id}</p>
+                <h2 className="mt-1 text-[15px] font-semibold text-[#0b1c30]">{dataset.title}</h2>
               </div>
               <span className="border border-[#dce9ff] px-2 py-1 font-mono text-[10px] text-[#45464d]">
                 {dataset.ingestion_status}
               </span>
             </div>
-            <p className="text-[12px] text-[#45464d]">{dataset.organization} · {dataset.category}</p>
+            <p className="text-[12px] text-[#45464d]">{dataset.publisher || dataset.source_name} · {dataset.category}</p>
             {dataset.description && <p className="text-[13px] leading-relaxed text-[#45464d]">{dataset.description}</p>}
             <dl className="grid grid-cols-2 gap-3 border-t border-[#eff4ff] pt-3 text-[11px]">
               <div><dt className="text-[#76777d]">Records</dt><dd className="font-mono text-[#0b1c30]">{dataset.record_count.toLocaleString()}</dd></div>
-              <div><dt className="text-[#76777d]">Verification</dt><dd className="text-[#0b1c30]">{dataset.verification_status}</dd></div>
-              <div><dt className="text-[#76777d]">Geographic scope</dt><dd className="text-[#0b1c30]">{dataset.geographic_scope || 'Not specified'}</dd></div>
-              <div><dt className="text-[#76777d]">Reporting period</dt><dd className="text-[#0b1c30]">{dataset.time_period || 'Not specified'}</dd></div>
+              <div><dt className="text-[#76777d]">Geographic level</dt><dd className="text-[#0b1c30]">{dataset.geographic_level}</dd></div>
+              <div><dt className="text-[#76777d]">Geographic scope</dt><dd className="text-[#0b1c30]">{dataset.geographic_scope || 'National'}</dd></div>
+              <div><dt className="text-[#76777d]">Reporting period</dt><dd className="text-[#0b1c30]">{dataset.period || dataset.year || '2024'}</dd></div>
             </dl>
             {dataset.source_url && (
-                <a href={dataset.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#005049] underline">
+              <a href={dataset.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#005049] underline">
                 <span>{t('Open source')}</span><span className="material-symbols-outlined text-[14px]">open_in_new</span>
               </a>
             )}
