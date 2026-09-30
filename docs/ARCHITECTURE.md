@@ -148,10 +148,28 @@ Analysis Persistence (request_analyses table)
 Response to Officer / Frontend Dashboard
 ```
 
-## 7. Known Architectural Limitations
+## 7. Security & Prompt Injection Mitigation Architecture
+
+To guarantee strict compliance with institutional data governance and prevent adversarial prompt injections:
+
+1. **Context Isolation Boundary:** Untrusted citizen narratives are enclosed within strict XML-like `<citizen_submission>` data isolation delimiters.
+2. **System Prompt Immutability:** System instructions mandate that user text is processed exclusively as semantic context rather than executable instructions.
+3. **Citation-Backed Generation:** Every positive finding produced by Gemini must link to an explicit `evidence_id`. Assertions lacking direct linkage are rejected or flagged as evidence gaps.
+4. **Secret Protection:** API keys and environment variables are strictly managed via Pydantic settings and never logged, echoed, or included in client payloads.
+
+## 8. Verification & Quality Assurance Architecture
+
+Every subsystem is covered by deterministic test suites in `tests/`:
+- **Unit Testing:** Deterministic mock fixtures for Gemini APIs, ensuring test execution without live API rate limits or network dependencies.
+- **Vector Retrieval Tests:** Verification of FAISS index creation, query serialization, embedding dimensionality (384-dim), and cosine similarity metrics.
+- **Hybrid Retrieval Tests:** 3-tier precedence test cases validating exact metadata match overrides and deterministic tie-breaking.
+- **Anti-Injection Tests:** Adversarial test inputs designed to attempt instruction overriding and verify guardrail enforcement.
+
+## 9. Known Architectural Limitations
 
 1. **Dataset Breadth:** Ingested data is currently limited to the Jal Jeevan Mission 2024 district-level rural drinking water dataset (25 baseline records).
 2. **Local Prototype Vector Store:** FAISS IndexFlatIP is operated as a local vector index without distributed clustering.
 3. **Similarity vs Truth:** Vector similarity scores represent semantic relevance between query and evidence, not empirical ground truth.
 4. **Evidence Gaps:** Missing public datasets are acknowledged as evidence gaps rather than conclusive disproof of citizen issues.
 5. **No Decision Automation:** Decision automation, priority scoring, hotspot detection, and automated dispatch are out of scope.
+

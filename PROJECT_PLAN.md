@@ -25,18 +25,47 @@
 
 ## Completed Phases Detail
 
-### Phase 2 Step 3C-2C: Hybrid Retrieval
-- **Objective:** Combine deterministic metadata retrieval with semantic FAISS retrieval into a unified hybrid retriever.
+### Phase 1: Foundation UI & Institutional Interface
+- **Objective:** Establish the civic design system, multilingual UI shell, navigation tabs, and institutional decision-support dashboards.
+- **Components:** Responsive layout, tab navigation (Intake, Request Tracking, Dataset Browser, Institutional Analysis), Lucide icons, Civic tokens.
+
+### Phase 2 Step 1: Citizen Request Submission & Persistence
+- **Objective:** Provide a structured submission pipeline for citizens to submit localized civic concerns.
+- **Service:** `backend/routes/requests.py` & `backend/models.py`
+- **Features:** Input validation with Pydantic, auto-generated unique reference IDs (`NL-YYYYMMDD-XXXXXX`), and SQLite transactional persistence.
+
+### Phase 2 Step 2: Gemini Multilingual Request Understanding
+- **Objective:** Extract structured parameters from freeform citizen text across diverse Indian languages.
+- **Service:** `backend/gemini_service.py`
+- **Extracted Fields:** Primary language, problem category, severity score, locality, district, state, and executive summary with safe fallback logic.
+
+### Phase 2 Step 3A & 3B: Public Data Foundation & Normalization
+- **Objective:** Ingest, clean, standardise, and persist official open government datasets with complete provenance tracking.
+- **Service:** `backend/public_data/` (loaders, normalizer, repository)
+- **Baseline:** Jal Jeevan Mission (JJM) 2024 district-level rural drinking water coverage from Open Government Data (OGD) India.
+
+### Phase 2 Step 3C-1: Knowledge Layer & Baseline Retrieval
+- **Objective:** Transform raw normalized records into standardized, citable `KnowledgeEvidence` objects.
+- **Service:** `backend/knowledge/builders.py` & `backend/knowledge/retriever.py`
+- **Features:** Deterministic metadata filtering by administrative attributes (`state`, `district`, `category`).
+
+### Phase 2 Step 3C-2A & 3C-2B: Vector Embeddings & Semantic Search
+- **Objective:** Enable semantic understanding of civic issues via high-dimensional multilingual embeddings.
+- **Service:** `backend/knowledge/embedding_service.py` & `backend/knowledge/vector_index.py`
+- **Vector Model:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` with FAISS IndexFlatIP (cosine similarity over L2-normalized 384-dim vectors).
+
+### Phase 2 Step 3C-2C: Hybrid Retrieval System
+- **Objective:** Combine deterministic administrative filtering with multilingual vector search into a unified hybrid retriever.
 - **Service:** `backend/knowledge/hybrid_retriever.py`
 - **Ranking Scheme:** 
   1. `metadata_match_level` (3 = State+District+Category, 2 = District+Category, 1 = Category, 0 = Semantic Only)
   2. `similarity_score` (Cosine similarity over L2-normalized vectors)
   3. `evidence_id` ascending (Deterministic tie-breaker)
-- **Deduplication:** Merges duplicates by `evidence_id` and records `retrieval_method` (`hybrid`, `semantic`, or `metadata`).
+- **Deduplication:** Merges duplicates by canonical `evidence_id` and records `retrieval_method` (`hybrid`, `semantic`, or `metadata`).
 - **Endpoint:** `GET /api/knowledge/hybrid-search`
 
 ### Phase 2 Step 3C-3: Citizen Request to Retrieval Pipeline
-- **Objective:** Automatically ground submitted citizen requests against public evidence upon submission.
+- **Objective:** Automatically ground citizen requests against public evidence upon submission.
 - **Query Builder:** `backend/knowledge/query_builder.py` constructs a natural language query using problem summary, category, state, district, and locality.
 - **Persistence:** `request_evidence_matches` table links `request_id` to canonical `evidence_id` with rank, scores, and match level.
 - **Resilience:** If Gemini extraction fails or is unavailable, retrieval runs safely on raw user narrative without breaking request creation.
@@ -53,6 +82,33 @@
 
 ---
 
+## Verification & Test Quality Matrix
+
+The platform includes a 100% deterministic Pytest test suite covering all modules:
+
+| Test Module | Scope | Status |
+|---|---|---|
+| `tests/test_health.py` | API health check & service status | PASSED |
+| `tests/test_requests.py` | Citizen request intake & tracking validation | PASSED |
+| `tests/test_gemini_service.py` | Structured extraction & fallback resilience | PASSED |
+| `tests/test_public_data.py` | Ingestion, normalization, & metadata verification | PASSED |
+| `tests/test_knowledge.py` | Deterministic knowledge evidence building | PASSED |
+| `tests/test_vector_index.py` | FAISS index build, persistence, & querying | PASSED |
+| `tests/test_semantic_retrieval.py` | Vector search & semantic relevance | PASSED |
+| `tests/test_hybrid_retrieval.py` | Hybrid ranking, metadata match levels, deduplication | PASSED |
+| `tests/test_request_retrieval.py` | Automatic query building & evidence matching | PASSED |
+| `tests/test_rag.py` | Anti-injection context & grounded Gemini synthesis | PASSED |
+
+---
+
+## Future Roadmap
+
+- **Phase 3A: Expanded Data Ingestion:** Ingest additional civic sector datasets (Pradhan Mantri Gram Sadak Yojana for roads, National Health Mission for healthcare facilities).
+- **Phase 3B: Spatial Visualizations:** Integrate district and block-level choropleth map overlays for public metric indicators.
+- **Phase 3C: Batch Trend Synthesis:** Multi-request thematic clustering to detect recurring systemic issues across administrative sub-divisions.
+
+---
+
 ## Known Limitations
 
 1. **Public Dataset Coverage:** Currently limited to the Jal Jeevan Mission 2024 district-level rural drinking water baseline.
@@ -60,3 +116,4 @@
 3. **Similarity Score:** Vector similarity represents semantic proximity, not statistical confidence or empirical truth.
 4. **Evidence Gaps:** Missing public records do not disprove citizen claims; gaps are explicitly noted.
 5. **No Decision Automation:** System is purely decision-support; priority scoring, hotspot detection, and automated dispatch are out of scope for this stage.
+
