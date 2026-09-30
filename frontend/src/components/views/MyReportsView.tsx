@@ -5,8 +5,11 @@ import {
   createRequestAnalysisApi,
   fetchCitizenRequestApi,
   fetchRequestEvidenceApi,
+  fetchRequestPriorityApi,
+  createRequestPriorityApi,
   GroundedAnalysis,
   RequestEvidenceResponse,
+  PriorityAssessmentResponse,
 } from '../../api/requests';
 import { useT } from '../../i18n';
 
@@ -30,7 +33,9 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
   const [requestDetails, setRequestDetails] = useState<CitizenRequestRecord | null>(null);
   const [evidenceDetails, setEvidenceDetails] = useState<RequestEvidenceResponse | null>(null);
   const [analysis, setAnalysis] = useState<GroundedAnalysis | null>(null);
+  const [priorityAssessment, setPriorityAssessment] = useState<PriorityAssessmentResponse | null>(null);
   const [busy, setBusy] = useState(false);
+  const [priorityBusy, setPriorityBusy] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
 
   const openRequest = async (request: CitizenRequestRecord) => {
@@ -42,6 +47,7 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
     setRequestDetails(null);
     setEvidenceDetails(null);
     setAnalysis(null);
+    setPriorityAssessment(null);
     setRequestError(null);
     setBusy(true);
     try {
@@ -51,6 +57,12 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
       ]);
       setRequestDetails(details);
       setEvidenceDetails(evidence);
+      try {
+        const priority = await fetchRequestPriorityApi(request.reference_id);
+        setPriorityAssessment(priority);
+      } catch {
+        // Priority not yet computed for this request; user can trigger it
+      }
     } catch (error) {
       setRequestError(error instanceof Error ? error.message : 'Request details could not be loaded.');
     } finally {
@@ -68,6 +80,19 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
       setRequestError(error instanceof Error ? error.message : 'Grounded analysis could not be generated.');
     } finally {
       setBusy(false);
+    }
+  };
+
+  const generatePriority = async (referenceId: string) => {
+    setPriorityBusy(true);
+    setRequestError(null);
+    try {
+      const response = await createRequestPriorityApi(referenceId);
+      setPriorityAssessment(response);
+    } catch (error) {
+      setRequestError(error instanceof Error ? error.message : 'Priority assessment could not be calculated.');
+    } finally {
+      setPriorityBusy(false);
     }
   };
 
@@ -172,16 +197,27 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
                     ))}
                   </div>
 
-                  {evidence.length > 0 && (
+                  <div className="flex flex-wrap gap-2 pt-2">
+                    {evidence.length > 0 && (
+                      <button
+                        type="button"
+                        disabled={busy}
+                        onClick={() => void generateAnalysis(request.reference_id)}
+                        className="border border-[#006a61] px-3 py-2 text-[12px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:opacity-50"
+                      >
+                        {busy ? t('Generating...') : t('Generate evidence-grounded analysis')}
+                      </button>
+                    )}
+
                     <button
                       type="button"
-                      disabled={busy}
-                      onClick={() => void generateAnalysis(request.reference_id)}
-                      className="border border-[#006a61] px-3 py-2 text-[12px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:opacity-50"
+                      disabled={priorityBusy}
+                      onClick={() => void generatePriority(request.reference_id)}
+                      className="border border-[#0b1c30] px-3 py-2 text-[12px] font-semibold text-[#0b1c30] hover:bg-[#eff4ff] disabled:opacity-50"
                     >
-                      {busy ? t('Generating...') : t('Generate evidence-grounded analysis')}
+                      {priorityBusy ? t('Calculating...') : (priorityAssessment ? t('Recalculate Priority Assessment') : t('Evaluate Priority Score'))}
                     </button>
-                  )}
+                  </div>
 
                   {analysis && (
                     <section className="space-y-3 border-t border-[#dce9ff] pt-4" aria-label="Grounded analysis">
@@ -197,6 +233,74 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
                       <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Evidence Gaps')}</h4><ul className="list-disc pl-5 text-[12px]">{analysis.evidence_gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul></div>
                       <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Sources')}</h4><ul className="list-disc pl-5 font-mono text-[12px]">{analysis.source_references.map((source) => <li key={source}>{source}</li>)}</ul></div>
                       <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Limitations')}</h4><ul className="list-disc pl-5 text-[12px]">{analysis.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div>
+                    </section>
+                  )}
+
+                  {priorityAssessment && (
+                    <section className="space-y-3 border-t border-[#dce9ff] pt-4" aria-label="Priority assessment">
+                      <div className="flex flex-wrap items-center justify-between gap-2">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#76777d]">NagrikLens Decision-Support Assessment</span>
+                          <h3 className="text-[15px] font-bold text-[#0b1c30]">Evidence-Based Priority Assessment</h3>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-[11px] text-[#76777d]">Methodology: {priorityAssessment.methodology_version}</span>
+                          <span className="px-2.5 py-1 rounded text-[12px] font-bold bg-[#eff4ff] text-[#0b1c30] border border-[#dce9ff]">
+                            Score: {priorityAssessment.overall_priority.toFixed(1)} / 100 ({priorityAssessment.priority_band})
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-left text-[12px] border border-[#e5eeff]">
+                          <thead className="bg-[#f8f9ff] text-[#45464d] text-[11px] uppercase border-b border-[#e5eeff]">
+                            <tr>
+                              <th className="p-2">Factor</th>
+                              <th className="p-2">Availability</th>
+                              <th className="p-2">Raw Value</th>
+                              <th className="p-2">Norm Score</th>
+                              <th className="p-2">Weight</th>
+                              <th className="p-2">Contribution</th>
+                              <th className="p-2">Explanation & Provenance</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-[#e5eeff]">
+                            {priorityAssessment.factors.map((f) => (
+                              <tr key={f.factor} className={f.available ? '' : 'bg-[#fffbfa]'}>
+                                <td className="p-2 font-medium text-[#0b1c30]">{f.factor}</td>
+                                <td className="p-2">
+                                  {f.available ? (
+                                    <span className="text-[#006a61] font-semibold">Available</span>
+                                  ) : (
+                                    <span className="text-[#93000a] font-medium">Unavailable</span>
+                                  )}
+                                </td>
+                                <td className="p-2 font-mono">{f.raw_value !== null && f.raw_value !== undefined ? f.raw_value : 'N/A'}</td>
+                                <td className="p-2 font-mono">{f.normalized_value !== null && f.normalized_value !== undefined ? `${f.normalized_value.toFixed(1)}/100` : 'N/A'}</td>
+                                <td className="p-2 font-mono">{f.weight}%</td>
+                                <td className="p-2 font-mono font-semibold text-[#0b1c30]">
+                                  {f.contribution !== null && f.contribution !== undefined ? `${f.contribution.toFixed(1)} pts` : 'N/A'}
+                                </td>
+                                <td className="p-2 text-[11px] text-[#45464d]">
+                                  {f.explanation}
+                                  {f.source && <div className="text-[10px] text-[#76777d] mt-0.5">Source: {f.source}</div>}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+
+                      {priorityAssessment.limitations && priorityAssessment.limitations.length > 0 && (
+                        <div className="bg-[#eff4ff] p-3 rounded border border-[#dce9ff] text-[11px] text-[#45464d] space-y-1">
+                          <span className="font-semibold uppercase tracking-wider text-[#0b1c30]">Methodological Limitations:</span>
+                          <ul className="list-disc pl-4 space-y-0.5">
+                            {priorityAssessment.limitations.map((lim, idx) => (
+                              <li key={idx}>{lim}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
                     </section>
                   )}
                 </div>

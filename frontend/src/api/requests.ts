@@ -78,6 +78,30 @@ export interface RequestAnalysisResponse {
   analysis: GroundedAnalysis;
 }
 
+export interface PriorityFactorDetail {
+  factor: string;
+  raw_value?: number | null;
+  normalized_value?: number | null;
+  weight: number;
+  available: boolean;
+  contribution?: number | null;
+  source?: string | null;
+  evidence_ids: string[];
+  explanation: string;
+}
+
+export interface PriorityAssessmentResponse {
+  id?: number | null;
+  request_reference_id: string;
+  overall_priority: number;
+  priority_band: 'LOW' | 'MODERATE' | 'HIGH' | 'VERY HIGH';
+  methodology_version: string;
+  evidence_count: number;
+  factors: PriorityFactorDetail[];
+  limitations: string[];
+  generated_at: string;
+}
+
 export function createCitizenRequestApi(input: CitizenRequestInput): Promise<CitizenRequestRecord> {
   return apiFetchRoot('/api/requests', { method: 'POST', body: JSON.stringify(input) });
 }
@@ -93,3 +117,11 @@ export function fetchRequestEvidenceApi(referenceId: string): Promise<RequestEvi
 export function createRequestAnalysisApi(referenceId: string): Promise<RequestAnalysisResponse> {
   return apiFetchRoot(`/api/requests/${encodeURIComponent(referenceId)}/analysis`, { method: 'POST' });
 }
+
+export function fetchRequestPriorityApi(referenceId: string): Promise<PriorityAssessmentResponse> {
+  return apiFetchRoot(`/api/requests/${encodeURIComponent(referenceId)}/priority`);
+}
+
+export function createRequestPriorityApi(referenceId: string): Promise<PriorityAssessmentResponse> {
+  return apiFetchRoot(`/api/requests/${encodeURIComponent(referenceId)}/priority`, { method: 'POST' });
+}
