@@ -113,7 +113,7 @@ def create_or_update_request_analysis(
             evidence_items.append(ev)
 
     # Case 1: No evidence found
-    if not evidence_items:
+    if not evidence_items or req.retrieval_status == "NO_EVIDENCE":
         no_ev_analysis = GroundedAnalysis(
             summary="Available public-data evidence is insufficient to establish this.",
             observations=[

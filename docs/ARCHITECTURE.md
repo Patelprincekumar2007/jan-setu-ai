@@ -1,6 +1,6 @@
 # NagrikLens AI: Technical Architecture Specification
 
-## 1. Overview & Prototype Scope
+## 1. Overview and Prototype Scope
 NagrikLens AI is a multilingual citizen development intelligence platform designed as a decision-support prototype for public administration officers. It is NOT an official government grievance portal, government-operated software, or government-endorsed system. It is a hackathon prototype demonstrating evidence-backed civic decision support.
 
 ## 2. Core Information Separation
@@ -11,165 +11,79 @@ The platform enforces a strict separation between three distinct data domains:
 
 Public data is never presented as citizen submissions, and AI inferences are never presented as official government statistics.
 
-## 3. Public Data Foundation & Normalization (Phase 2 Step 3A + 3B)
-
-### Directory Architecture
-```
-data/
-    raw/
-        jjm_district_water_coverage_2024.csv
-        jjm_district_water_coverage_2024.meta.json
-    normalized/
-        jjm_water_coverage_normalized.json
-        jjm_water_coverage_normalized.csv
-
-backend/
-    public_data/
-        __init__.py
-        models.py
-        schemas.py
-        repository.py
-        service.py
-        loaders.py
-        normalizer.py
-        routes.py
-```
-
-### Ingestion & Normalization Pipeline
-```
-Raw CSV / Open Source
-    ↓
-Loader (BaseDatasetLoader)
-    ↓
-Deterministic Normalizer
-  - Geographic standardisation (whitespace collapse, standard title-casing)
-  - Strict numeric conversion (preserves nulls, rejects synthetic zeroes)
-  - Civic sector category mapping (Water, Roads, Healthcare, Sanitation, Other)
-  - Missing field handling (null preservation)
-    ↓
-Pydantic Schema Validation (DatasetCreate, PublicDataRecordCreate)
-    ↓
-SQLite Persistence (datasets, public_data_records)
-    ↓
-Public REST API (/api/datasets, /api/datasets/{id}/records)
-```
-
-## 4. Knowledge Ingestion & Hybrid Retrieval Layer (Phase 2 Step 3C-1, 3C-2A, 3C-2B, 3C-2C)
-
-### Directory Architecture
-```
-backend/
-    knowledge/
-        __init__.py
-        models.py
-        schemas.py
-        builders.py
-        embedding_service.py
-        vector_index.py
-        retriever.py
-        hybrid_retriever.py
-        query_builder.py
-        repository.py
-        service.py
-        routes.py
-        indexer.py
-```
-
-### Hybrid Retrieval Architecture
-```
-Search Query + Administrative Filters
-    ↓
-Hybrid Retriever (hybrid_search)
-  1. Executes Semantic Vector Search (FAISS IndexFlatIP over L2-normalized 384-dim vectors)
-  2. Executes Deterministic Metadata Search (Exact and partial state/district/category matches)
-  3. Merges and Deduplicates candidates by canonical evidence_id
-  4. Applies Transparent Deterministic Ranking:
-     - Level 3: State + District + Category Match
-     - Level 2: District + Category Match
-     - Level 1: Category Match
-     - Level 0: Semantic Vector Similarity Only
-  5. Deterministic tie-breaker: evidence_id ascending
-    ↓
-Top-K Knowledge Evidence Results with Provenance & Metadata Match Level
-```
-
-## 5. Citizen Request to Retrieval Pipeline (Phase 2 Step 3C-3)
+## 3. End-to-End System Architecture
 
 ```
-Citizen Request Submission (POST /api/requests)
-    ↓
-SQLite Request Persistence (requests table, status=RECEIVED)
-    ↓
-Gemini Structured Extraction (Language, Summary, Severity, Category)
-    ↓ (Fallback to raw narrative if Gemini is unavailable)
-Retrieval Query Builder (build_retrieval_query)
-    ↓
-Hybrid Retriever Execution (Top-5 Public Evidence Candidates)
-    ↓
-Persistence of Matches (request_evidence_matches table)
-    ↓
-Updated Retrieval Status (COMPLETED / NO_EVIDENCE / FAILED)
+Citizen
+   |
+   v
+Request Intake (EN / HI / GU / Voice)
+   |
+   +------------------------------> Language Preservation
+   |
+   v
+Gemini Structured Understanding (or Deterministic Fallback)
+   |
+   v
+Retrieval Query Builder
+   |
+   v
+Hybrid Knowledge Retrieval
+   |-- Public Data Records (JJM, NHM, SBM, PMGSY)
+   |-- Knowledge Evidence Documents
+   `-- FAISS Semantic Vector Index (L2-normalized)
+   |
+   v
+Grounded RAG Engine (with Citation & Anti-Injection Guardrails)
+   |
+   +-------------------------------+
+   |                               |
+   v                               v
+Deterministic Priority Engine   Deterministic Demand Aggregation
+(priority-v1: 5 factors)        (hotspot-v1: Geo clusters)
+   |                               |
+   +---------------+---------------+
+                   |
+                   v
+     Executive Decision Dashboard
+       |             |             |
+       v             v             v
+   Analytics     Hotspots      Datasets
+       |             |             |
+       +-------------+-------------+
+                     |
+                     v
+      Security Hardening & Production Layer
 ```
 
-## 6. RAG Grounded Analysis Architecture (Phase 2 Step 3C-4)
+## 4. Prioritisation Engine (`priority-v1` - Stage 3E)
+- **Deterministic Evaluation:** Mathematical formulation using 5 factors: Reported Severity (30%), Affected Households (25%), Infrastructure Deficit (25%), Vulnerability Evidence (10%), Geographic Evidence Coverage (10%).
+- **Weight Re-normalization:** Dynamically excludes unavailable factors from denominator without assuming zero or fabricating scores.
+- **Persistence:** Idempotent storage in `request_priority_assessments` and `request_priority_factors`.
 
-### Directory Architecture
-```
-backend/
-    rag/
-        __init__.py
-        models.py
-        schemas.py
-        context_builder.py
-        service.py
-        routes.py
-```
+## 5. Demand Aggregation and Hotspots (`hotspot-v1` - Stage 3F)
+- **Zero Fabricated Demand:** Groups formed strictly from actual stored `CitizenRequest` database entries.
+- **Deterministic Clustering:** Grouped by State, District, Locality, Category with factor metrics.
 
-### Grounding & Analysis Pipeline
-```
-Analysis Request (POST /api/requests/{reference_id}/analysis)
-    ↓
-Fetch Request + Linked KnowledgeEvidence Matches
-    ↓
-RAG Context Builder (build_rag_context)
-  - Untrusted citizen input isolated in tagged data block
-  - Strict anti-injection instructions to ignore adversarial overrides
-  - Grounded evidence injected with evidence_id, metric, value, year, and source citation
-    ↓
-Gemini Generative Call with System Instructions
-  - Zero hallucination policy
-  - Explicit evidence citation requirement (e.g. EVID-...)
-  - Compulsory evidence gap identification
-    ↓
-Pydantic Output Validation (GroundedAnalysis schema)
-    ↓
-Analysis Persistence (request_analyses table)
-    ↓
-Response to Officer / Frontend Dashboard
-```
+## 6. Request Analytics (Stage 3H)
+- Reusable, validated analytics APIs for categories, geography, timeline, severity distribution, and evidence coverage.
 
-## 7. Security & Prompt Injection Mitigation Architecture
+## 7. Multilingual and Voice Intake (Stage 3I)
+- Support for English, Hindi, and Gujarati with full preservation of original citizen text.
+- Clean `POST /api/voice/transcribe` with security validation and honest 503 fallback if unconfigured.
 
+## 8. Security Hardening and Production Layer (Stage 3J)
+- `SecurityHeadersMiddleware`, `RateLimitMiddleware` (60 req/min), explicit CORS allowlist, sanitized error handling, SQL/path safety, zero secrets.
+
+## 9. Security and Prompt Injection Mitigation Architecture
 To guarantee strict compliance with institutional data governance and prevent adversarial prompt injections:
-
 1. **Context Isolation Boundary:** Untrusted citizen narratives are enclosed within strict XML-like `<citizen_submission>` data isolation delimiters.
 2. **System Prompt Immutability:** System instructions mandate that user text is processed exclusively as semantic context rather than executable instructions.
 3. **Citation-Backed Generation:** Every positive finding produced by Gemini must link to an explicit `evidence_id`. Assertions lacking direct linkage are rejected or flagged as evidence gaps.
 4. **Secret Protection:** API keys and environment variables are strictly managed via Pydantic settings and never logged, echoed, or included in client payloads.
 
-## 8. Verification & Quality Assurance Architecture
-
+## 10. Verification and Quality Assurance Architecture
 Every subsystem is covered by deterministic test suites in `tests/`:
+- **130 Passing Automated Tests:** Covering public data, vector search, hybrid retrieval, RAG, priority-v1, hotspot-v1, analytics, multilingual, voice, and security middleware.
 - **Unit Testing:** Deterministic mock fixtures for Gemini APIs, ensuring test execution without live API rate limits or network dependencies.
-- **Vector Retrieval Tests:** Verification of FAISS index creation, query serialization, embedding dimensionality (384-dim), and cosine similarity metrics.
-- **Hybrid Retrieval Tests:** 3-tier precedence test cases validating exact metadata match overrides and deterministic tie-breaking.
 - **Anti-Injection Tests:** Adversarial test inputs designed to attempt instruction overriding and verify guardrail enforcement.
-
-## 9. Known Architectural Limitations
-
-1. **Dataset Breadth:** Ingested data is currently limited to the Jal Jeevan Mission 2024 district-level rural drinking water dataset (25 baseline records).
-2. **Local Prototype Vector Store:** FAISS IndexFlatIP is operated as a local vector index without distributed clustering.
-3. **Similarity vs Truth:** Vector similarity scores represent semantic relevance between query and evidence, not empirical ground truth.
-4. **Evidence Gaps:** Missing public datasets are acknowledged as evidence gaps rather than conclusive disproof of citizen issues.
-5. **No Decision Automation:** Decision automation, priority scoring, hotspot detection, and automated dispatch are out of scope.
-

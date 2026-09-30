@@ -26,16 +26,20 @@ def init_db():
     import backend.public_data.models
     import backend.knowledge.models
     import backend.rag.models
+    import backend.prioritization.models
+    import backend.hotspots.models
     
     Base.metadata.create_all(bind=engine)
 
+
     if settings.database_url.startswith("sqlite"):
         with engine.connect() as conn:
+            # 1. requests table migrations
             cursor = conn.execute(text("PRAGMA table_info(requests)"))
             columns = [row[1] for row in cursor.fetchall()]
 
             if columns:  # Table exists, ensure all columns exist
-                new_columns = {
+                new_request_columns = {
                     "affected_household_count": "INTEGER",
                     "ai_extraction_status": "VARCHAR(30) DEFAULT 'NOT_PROCESSED' NOT NULL",
                     "language": "VARCHAR(50)",
@@ -46,7 +50,27 @@ def init_db():
                     "retrieval_status": "VARCHAR(30) DEFAULT 'NOT_RUN' NOT NULL",
                 }
 
-                for col_name, col_type in new_columns.items():
+                for col_name, col_type in new_request_columns.items():
                     if col_name not in columns:
                         conn.execute(text(f"ALTER TABLE requests ADD COLUMN {col_name} {col_type}"))
-                conn.commit()
+
+            # 2. datasets table migrations
+            cursor = conn.execute(text("PRAGMA table_info(datasets)"))
+            dataset_cols = [row[1] for row in cursor.fetchall()]
+            if dataset_cols:
+                new_dataset_columns = {
+                    "geographic_level": "VARCHAR(50) DEFAULT 'District'",
+                    "category": "VARCHAR(100) DEFAULT 'Other'",
+                    "year": "INTEGER",
+                    "period": "VARCHAR(50)",
+                    "retrieval_method": "VARCHAR(50) DEFAULT 'official_download'",
+                    "source_format": "VARCHAR(50) DEFAULT 'CSV'",
+                    "notes": "TEXT",
+                    "updated_at": "DATETIME",
+                }
+                for col_name, col_type in new_dataset_columns.items():
+                    if col_name not in dataset_cols:
+                        conn.execute(text(f"ALTER TABLE datasets ADD COLUMN {col_name} {col_type}"))
+
+            conn.commit()
+

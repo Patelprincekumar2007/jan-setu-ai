@@ -20,71 +20,57 @@
 | Phase 2 Step 3C-2C | Hybrid Retrieval System | Metadata Match Level + FAISS Vector Scoring, Deduplication | COMPLETE & LOCKED |
 | Phase 2 Step 3C-3 | Citizen Request to Retrieval Pipeline | Natural Language Query Builder, Automated Evidence Linkage | COMPLETE & LOCKED |
 | Phase 2 Step 3C-4 | RAG Grounded Analysis | Gemini Context Grounding, Injection Defense, Evidence Provenance | COMPLETE & LOCKED |
+| Phase 2 Step 3D | Real Public Dataset Expansion | Multi-sector Datasets (Water, Healthcare, Sanitation, Roads), Reusable Ingestion, Quality Reports | COMPLETE & LOCKED |
+| Phase 2 Step 3E | Evidence-Based Prioritisation | Deterministic Engine, 5 Factors, Re-normalized Denominator, priority-v1 | COMPLETE & LOCKED |
+| Phase 2 Step 3F | Demand Aggregation & Hotspots | Deterministic Clustering on Actual Requests, hotspot-v1 | COMPLETE & LOCKED |
+| Phase 2 Step 3G | Decision-Support Dashboard | Real-time Metric Aggregates, Multi-section Analytics, Zero Fake Maps | COMPLETE & LOCKED |
+| Phase 2 Step 3H | Request Analytics | Category, Geographic, Timeline, Severity, Evidence Coverage APIs | COMPLETE & LOCKED |
+| Phase 2 Step 3I | Multilingual + Voice | English, Hindi, Gujarati Intake, Google Speech Integration & Safe Fallback | COMPLETE & LOCKED |
+| Phase 2 Step 3J | Security & Production Hardening | Security Headers, Rate Limiting, Sanitized Errors, Explicit CORS | COMPLETE & LOCKED |
 
 ---
 
-## Completed Phases Detail
+## Detailed Completed Stages (3E through 3J)
 
-### Phase 1: Foundation UI & Institutional Interface
-- **Objective:** Establish the civic design system, multilingual UI shell, navigation tabs, and institutional decision-support dashboards.
-- **Components:** Responsive layout, tab navigation (Intake, Request Tracking, Dataset Browser, Institutional Analysis), Lucide icons, Civic tokens.
+### Stage 3E: Evidence-Based Prioritisation
+- **Objective:** Transform Citizen Request + Verified Public Evidence into a deterministic, auditable priority assessment.
+- **Engine (`priority-v1`):** Mathematical re-normalization across available factors (Reported Severity, Affected Households, Infrastructure Deficit, Vulnerability Evidence, Geographic Evidence Coverage).
+- **Non-Generative Invariant:** Gemini never computes mathematical scores.
+- **Endpoints:** `POST /api/requests/{reference_id}/priority`, `GET /api/requests/{reference_id}/priority`.
 
-### Phase 2 Step 1: Citizen Request Submission & Persistence
-- **Objective:** Provide a structured submission pipeline for citizens to submit localized civic concerns.
-- **Service:** `backend/routes/requests.py` & `backend/models.py`
-- **Features:** Input validation with Pydantic, auto-generated unique reference IDs (`NL-YYYYMMDD-XXXXXX`), and SQLite transactional persistence.
+### Stage 3F: Demand Aggregation and Hotspots
+- **Objective:** Aggregate actual stored citizen requests into geographic demand clusters without synthetic data or arbitrary ML clustering.
+- **Engine (`hotspot-v1`):** Groups by (State, District, Locality, Category) with factor metrics (request count, households, high severity count, evidence coverage, category concentration).
+- **Endpoints:** `GET /api/hotspots`, `GET /api/hotspots/{hotspot_id}`, `GET /api/analytics/overview`.
 
-### Phase 2 Step 2: Gemini Multilingual Request Understanding
-- **Objective:** Extract structured parameters from freeform citizen text across diverse Indian languages.
-- **Service:** `backend/gemini_service.py`
-- **Extracted Fields:** Primary language, problem category, severity score, locality, district, state, and executive summary with safe fallback logic.
+### Stage 3G: Decision-Support Dashboard
+- **Objective:** Production-ready decision-support dashboard connected to real backend APIs.
+- **Institutional Design:** Deep navy, slate, institutional green, neutral surfaces. Zero purple gradients, zero emojis, zero fake heatmaps.
+- **Sections:** Overview KPIs, Demand by Category, Geographic Demand, Evidence Coverage, Severity Distribution, Hotspot Clusters, Dataset Inventory.
 
-### Phase 2 Step 3A & 3B: Public Data Foundation & Normalization
-- **Objective:** Ingest, clean, standardise, and persist official open government datasets with complete provenance tracking.
-- **Service:** `backend/public_data/` (loaders, normalizer, repository)
-- **Baseline:** Jal Jeevan Mission (JJM) 2024 district-level rural drinking water coverage from Open Government Data (OGD) India.
+### Stage 3H: Request Analytics
+- **Objective:** Reusable analytics APIs based strictly on verified stored requests.
+- **Endpoints:** `GET /api/analytics/categories`, `/geography`, `/timeline`, `/evidence-coverage`, `/severity`.
+- **Validation:** Date range parsing, filter sanitization, honest null/zero representation.
 
-### Phase 2 Step 3C-1: Knowledge Layer & Baseline Retrieval
-- **Objective:** Transform raw normalized records into standardized, citable `KnowledgeEvidence` objects.
-- **Service:** `backend/knowledge/builders.py` & `backend/knowledge/retriever.py`
-- **Features:** Deterministic metadata filtering by administrative attributes (`state`, `district`, `category`).
+### Stage 3I: Multilingual + Voice
+- **Objective:** Intake support for English, Hindi (`hi`), and Gujarati (`gu`) while preserving original citizen input text.
+- **Voice Transcription:** `POST /api/voice/transcribe` with security validation and honest 503 fallback if unconfigured. Zero fake transcripts.
 
-### Phase 2 Step 3C-2A & 3C-2B: Vector Embeddings & Semantic Search
-- **Objective:** Enable semantic understanding of civic issues via high-dimensional multilingual embeddings.
-- **Service:** `backend/knowledge/embedding_service.py` & `backend/knowledge/vector_index.py`
-- **Vector Model:** `sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2` with FAISS IndexFlatIP (cosine similarity over L2-normalized 384-dim vectors).
-
-### Phase 2 Step 3C-2C: Hybrid Retrieval System
-- **Objective:** Combine deterministic administrative filtering with multilingual vector search into a unified hybrid retriever.
-- **Service:** `backend/knowledge/hybrid_retriever.py`
-- **Ranking Scheme:** 
-  1. `metadata_match_level` (3 = State+District+Category, 2 = District+Category, 1 = Category, 0 = Semantic Only)
-  2. `similarity_score` (Cosine similarity over L2-normalized vectors)
-  3. `evidence_id` ascending (Deterministic tie-breaker)
-- **Deduplication:** Merges duplicates by canonical `evidence_id` and records `retrieval_method` (`hybrid`, `semantic`, or `metadata`).
-- **Endpoint:** `GET /api/knowledge/hybrid-search`
-
-### Phase 2 Step 3C-3: Citizen Request to Retrieval Pipeline
-- **Objective:** Automatically ground citizen requests against public evidence upon submission.
-- **Query Builder:** `backend/knowledge/query_builder.py` constructs a natural language query using problem summary, category, state, district, and locality.
-- **Persistence:** `request_evidence_matches` table links `request_id` to canonical `evidence_id` with rank, scores, and match level.
-- **Resilience:** If Gemini extraction fails or is unavailable, retrieval runs safely on raw user narrative without breaking request creation.
-- **Endpoints:**
-  - `GET /api/requests/{reference_id}` (includes `ai_extraction_status`, `retrieval_status`, `evidence_count`)
-  - `GET /api/requests/{reference_id}/evidence` (returns linked public evidence with full provenance)
-
-### Phase 2 Step 3C-4: RAG Grounded Analysis
-- **Objective:** Synthesize structured public data analysis grounded strictly on retrieved evidence.
-- **Context Builder:** `backend/rag/context_builder.py` formats citizen input in an isolated user-data block with injection protection rules.
-- **Structured Schema:** `GroundedAnalysis` (Summary, Observations with `evidence_ids`, Evidence Gaps, Sources, Limitations).
-- **Persistence:** `request_analyses` table persists analysis runs without exposing secrets.
-- **Endpoint:** `POST /api/requests/{reference_id}/analysis`
+### Stage 3J: Security and Production Hardening
+- **Security Controls:**
+  - `SecurityHeadersMiddleware`: `X-Content-Type-Options`, `X-Frame-Options`, `X-XSS-Protection`, `Referrer-Policy`.
+  - `RateLimitMiddleware`: 60 requests/minute on compute-heavy routes.
+  - Explicit CORS allowlist (`FRONTEND_ORIGIN`).
+  - Global sanitized error handlers preventing stack trace and credential leakages.
+  - SQL injection and path traversal resistance.
+  - Zero secrets in repository; `.env.example` audited.
 
 ---
 
-## Verification & Test Quality Matrix
+## Verification and Test Quality Matrix
 
-The platform includes a 100% deterministic Pytest test suite covering all modules:
+The platform includes a 100% deterministic Pytest test suite covering all modules (130/130 passing tests):
 
 | Test Module | Scope | Status |
 |---|---|---|
@@ -98,22 +84,9 @@ The platform includes a 100% deterministic Pytest test suite covering all module
 | `tests/test_hybrid_retrieval.py` | Hybrid ranking, metadata match levels, deduplication | PASSED |
 | `tests/test_request_retrieval.py` | Automatic query building & evidence matching | PASSED |
 | `tests/test_rag.py` | Anti-injection context & grounded Gemini synthesis | PASSED |
-
----
-
-## Future Roadmap
-
-- **Phase 3A: Expanded Data Ingestion:** Ingest additional civic sector datasets (Pradhan Mantri Gram Sadak Yojana for roads, National Health Mission for healthcare facilities).
-- **Phase 3B: Spatial Visualizations:** Integrate district and block-level choropleth map overlays for public metric indicators.
-- **Phase 3C: Batch Trend Synthesis:** Multi-request thematic clustering to detect recurring systemic issues across administrative sub-divisions.
-
----
-
-## Known Limitations
-
-1. **Public Dataset Coverage:** Currently limited to the Jal Jeevan Mission 2024 district-level rural drinking water baseline.
-2. **Local Prototype Index:** FAISS index is stored locally and rebuilt on dataset updates.
-3. **Similarity Score:** Vector similarity represents semantic proximity, not statistical confidence or empirical truth.
-4. **Evidence Gaps:** Missing public records do not disprove citizen claims; gaps are explicitly noted.
-5. **No Decision Automation:** System is purely decision-support; priority scoring, hotspot detection, and automated dispatch are out of scope for this stage.
-
+| `tests/test_multi_dataset.py` | Multi-sector public datasets (JJM, NHM, SBM, PMGSY) | PASSED |
+| `tests/test_prioritization.py` | Stage 3E priority-v1 deterministic mathematical evaluation | PASSED |
+| `tests/test_hotspots.py` | Stage 3F hotspot-v1 deterministic demand clusters | PASSED |
+| `tests/test_analytics.py` | Stage 3H category, geo, timeline, evidence analytics | PASSED |
+| `tests/test_multilingual.py` | Stage 3I multilingual intake & voice transcription | PASSED |
+| `tests/test_security.py` | Stage 3J security middleware, rate limit, CORS, sanitization | PASSED |

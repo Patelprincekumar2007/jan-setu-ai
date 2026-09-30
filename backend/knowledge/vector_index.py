@@ -212,11 +212,12 @@ def search_vector_index(
     if total_indexed == 0:
         return [], 0
 
-    # Candidate oversampling pool to ensure post-filtering does not discard relevant candidates
-    pool_size = min(total_indexed, max(top_k * 10, 50))
+    # Candidate search pool covering all indexed records to guarantee post-filtering recall
+    pool_size = total_indexed
 
     query_vec = service.encode_query(query_text).reshape(1, -1)
     scores, indices = index.search(query_vec, pool_size)
+
 
     candidate_scores: List[Tuple[str, float]] = []
     for score, idx in zip(scores[0], indices[0]):
