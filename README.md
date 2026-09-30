@@ -90,22 +90,76 @@ Structured Grounded Analysis (Summary, Observations with Evidence IDs, Gaps, Sou
 ## 5. Technology Stack
 
 - **Frontend:**
-  - React 18 with Vite (TypeScript)
-  - React Router v7
+  - React 19 with Vite (TypeScript)
   - Tailwind CSS + Civic Design Tokens
   - Lucide React Iconography (zero emojis)
+  - Motion (for fluid, accessible UI animations)
   - Google Fonts: Outfit (Headings), Inter (UI / Body), JetBrains Mono (Technical IDs)
 - **Backend:**
   - Python 3.11+ / FastAPI
   - Official Google GenAI SDK (`google-genai`)
   - SQLite Database (`nagriklens.db`) with SQLAlchemy ORM
-  - SentenceTransformers + FAISS Vector Index
+  - SentenceTransformers + FAISS Vector Index (`sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2`)
   - Pydantic v2 validation models
   - Pytest test suite (100% deterministic tests, 95/95 passing)
 
 ---
 
-## 6. API Endpoints
+## 6. Quick Start & Local Setup Guide
+
+### Prerequisites
+- **Python:** 3.11 or higher
+- **Node.js:** 18.x or higher (npm / pnpm / yarn)
+- **Google Gemini API Key:** Access to Gemini 2.5 Flash / Pro via [Google AI Studio](https://aistudio.google.com/)
+
+### 1. Repository Setup
+```bash
+git clone https://github.com/Patelprincekumar2007/jan-setu-ai.git
+cd jan-setu-ai
+```
+
+### 2. Backend Setup
+```bash
+# Create and activate Python virtual environment
+python3 -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+
+# Install backend dependencies
+pip install -r backend/requirements.txt
+
+# Configure environment variables
+cp backend/.env.example backend/.env
+# Edit backend/.env and add your GEMINI_API_KEY
+```
+
+**Run Backend Server:**
+```bash
+uvicorn backend.main:app --host 0.0.0.0 --port 8000 --reload
+```
+The FastAPI interactive documentation will be accessible at `http://localhost:8000/docs`.
+
+### 3. Frontend Setup
+```bash
+# Navigate to frontend directory
+cd frontend
+
+# Install npm dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+The React frontend web application will be accessible at `http://localhost:3000`.
+
+### 4. Running the Test Suite
+```bash
+# Execute full backend test suite with Pytest
+pytest tests/ -v
+```
+
+---
+
+## 7. API Endpoints
 
 ### Citizen Request APIs
 - `POST /api/requests`: Submit a citizen development request (triggers Gemini extraction and hybrid retrieval).
@@ -129,10 +183,11 @@ Structured Grounded Analysis (Summary, Observations with Evidence IDs, Gaps, Sou
 
 ---
 
-## 7. Known Limitations
+## 8. Known Limitations
 
 1. **Current Public Data Coverage:** Currently includes 25 district baselines from Jal Jeevan Mission 2024.
 2. **Vector Index:** FAISS IndexFlatIP runs locally as a fast prototype vector index.
 3. **Similarity Scores:** Similarity score indicates semantic proximity, not real-world certainty or statistical confidence.
 4. **Missing Evidence:** Lack of public records does not imply a citizen problem does not exist; gaps are explicitly identified.
 5. **No Decision Automation:** Decision automation, priority scoring, hotspot detection, and automated dispatch are intentionally excluded from this phase.
+
