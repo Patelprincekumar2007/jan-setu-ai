@@ -1,4 +1,4 @@
-import { apiFetch } from './client';
+import { apiFetch, apiFetchRoot } from './client';
 
 export interface ReportCreateInput {
   title: string;
@@ -162,51 +162,23 @@ export async function triggerReportAnalysisApi(reportId: string): Promise<any> {
 
 // Phase 2 Step 3C-3 & 3C-4 API integrations
 export async function submitCitizenRequestApi(input: CitizenRequestInput): Promise<{ reference_id: string; status: string; message: string }> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  const rawBase = baseUrl.replace(/\/api\/v1\/?$/, '');
-  const response = await fetch(`${rawBase}/api/requests`, {
+  return apiFetchRoot('/api/requests', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(input),
   });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Request failed' }));
-    throw new Error(errorData.detail || `Request failed with status ${response.status}`);
-  }
-  return response.json();
 }
 
 export async function fetchCitizenRequestByRefApi(refId: string): Promise<CitizenRequestDetail> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  const rawBase = baseUrl.replace(/\/api\/v1\/?$/, '');
-  const response = await fetch(`${rawBase}/api/requests/${refId}`);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Request failed' }));
-    throw new Error(errorData.detail || `Request failed with status ${response.status}`);
-  }
-  return response.json();
+  return apiFetchRoot(`/api/requests/${encodeURIComponent(refId)}`);
 }
 
 export async function fetchCitizenRequestEvidenceApi(refId: string): Promise<RequestEvidenceResponse> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  const rawBase = baseUrl.replace(/\/api\/v1\/?$/, '');
-  const response = await fetch(`${rawBase}/api/requests/${refId}/evidence`);
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Evidence request failed' }));
-    throw new Error(errorData.detail || `Request failed with status ${response.status}`);
-  }
-  return response.json();
+  return apiFetchRoot(`/api/requests/${encodeURIComponent(refId)}/evidence`);
 }
 
 export async function triggerGroundedAnalysisApi(refId: string): Promise<GroundedAnalysisResponse> {
-  const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-  const rawBase = baseUrl.replace(/\/api\/v1\/?$/, '');
-  const response = await fetch(`${rawBase}/api/requests/${refId}/analysis`, {
+  return apiFetchRoot(`/api/requests/${encodeURIComponent(refId)}/analysis`, {
     method: 'POST',
   });
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => ({ detail: 'Analysis generation failed' }));
-    throw new Error(errorData.detail || `Analysis generation failed with status ${response.status}`);
-  }
-  return response.json();
 }
+

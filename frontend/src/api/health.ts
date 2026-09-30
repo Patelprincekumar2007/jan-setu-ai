@@ -1,19 +1,21 @@
-import { apiFetch } from './client';
+import { apiFetchRoot } from './client';
 
 export interface SystemHealth {
   status: string;
-  timestamp: string;
+  service?: string;
   environment: string;
-  services: {
-    api: string;
-    database: string;
-    gemini: string;
-    embedding_model: string;
-    faiss: string;
-    storage: string;
+  timestamp?: string;
+  services?: {
+    api?: string;
+    database?: string;
+    gemini?: string;
+    embedding_model?: string;
+    faiss?: string;
+    storage?: string;
   };
 }
 
 export async function fetchHealthApi(): Promise<SystemHealth> {
-  return apiFetch('/health');
+  return apiFetchRoot<SystemHealth>('/health');
 }
+

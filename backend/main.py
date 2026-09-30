@@ -111,8 +111,9 @@ app.include_router(voice_router)
 
 
 @app.get("/health")
+@app.get("/api/v1/health")
 def get_health():
-    """Basic health check endpoint for monitoring service readiness."""
+    """Basic lightweight health check endpoint for monitoring service readiness."""
     return {
         "status": "ok",
         "service": settings.service_name,
