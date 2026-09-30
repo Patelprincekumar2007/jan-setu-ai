@@ -1,91 +1,81 @@
 @import "tailwindcss";
 
 @theme {
-  --color-surface: #f8f9ff;
-  --color-surface-dim: #cbdbf5;
-  --color-surface-bright: #f8f9ff;
-  --color-surface-container-lowest: #ffffff;
-  --color-surface-container-low: #eff4ff;
-  --color-surface-container: #e5eeff;
-  --color-surface-container-high: #dce9ff;
-  --color-surface-container-highest: #d3e4fe;
-  --color-on-surface: #0b1c30;
-  --color-on-surface-variant: #45464d;
-  --color-inverse-surface: #213145;
-  --color-inverse-on-surface: #eaf1ff;
-  --color-outline: #76777d;
-  --color-outline-variant: #c6c6cd;
-  --color-surface-tint: #565e74;
-  --color-primary: #000000;
-  --color-on-primary: #ffffff;
-  --color-primary-container: #131b2e;
-  --color-on-primary-container: #7c839b;
-  --color-inverse-primary: #bec6e0;
-  --color-secondary: #006a61;
-  --color-on-secondary: #ffffff;
-  --color-secondary-container: #86f2e4;
-  --color-on-secondary-container: #006f66;
-  --color-tertiary: #000000;
-  --color-on-tertiary: #ffffff;
-  --color-tertiary-container: #00164e;
-  --color-on-tertiary-container: #6780d3;
-  --color-error: #ba1a1a;
-  --color-on-error: #ffffff;
-  --color-error-container: #ffdad6;
-  --color-on-error-container: #93000a;
-  --color-primary-fixed: #dae2fd;
-  --color-primary-fixed-dim: #bec6e0;
-  --color-on-primary-fixed: #131b2e;
-  --color-on-primary-fixed-variant: #3f465c;
-  --color-secondary-fixed: #89f5e7;
-  --color-secondary-fixed-dim: #6bd8cb;
-  --color-on-secondary-fixed: #00201d;
-  --color-on-secondary-fixed-variant: #005049;
-  --color-tertiary-fixed: #dce1ff;
-  --color-tertiary-fixed-dim: #b6c4ff;
-  --color-on-tertiary-fixed: #00164e;
-  --color-on-tertiary-fixed-variant: #264191;
-  --color-background: #f8f9ff;
-  --color-on-background: #0b1c30;
-  --color-surface-variant: #d3e4fe;
+  --color-brand-dark: #08101d;
+  --color-brand-navy: #0e1c30;
+  --color-brand-surface: #f0f4f9;
+  --color-brand-card: #ffffff;
+  --color-brand-card-hover: #f8fafc;
+  --color-brand-border: #e2e8f0;
+  --color-brand-border-dark: #cbd5e1;
+  --color-brand-teal: #00897b;
+  --color-brand-teal-light: #00c49f;
+  --color-brand-teal-dark: #00695c;
+  --color-brand-emerald: #10b981;
+  --color-brand-cyan: #0284c7;
+  --color-brand-amber: #f59e0b;
+  --color-brand-rose: #ef4444;
 
-  --font-body-lg: "Public Sans", sans-serif;
-  --font-headline-lg: "Public Sans", sans-serif;
-  --font-headline-xl: "Public Sans", sans-serif;
-  --font-headline-md: "Public Sans", sans-serif;
-  --font-headline-sm: "Public Sans", sans-serif;
-  --font-body-md: "Public Sans", sans-serif;
-  --font-body-sm: "Public Sans", sans-serif;
-  --font-label-md: "Public Sans", sans-serif;
-  --font-label-sm: "Public Sans", sans-serif;
+  --font-body-lg: "Inter", "Public Sans", sans-serif;
+  --font-headline-lg: "Inter", "Public Sans", sans-serif;
+  --font-headline-xl: "Inter", "Public Sans", sans-serif;
+  --font-headline-md: "Inter", "Public Sans", sans-serif;
+  --font-headline-sm: "Inter", "Public Sans", sans-serif;
+  --font-body-md: "Inter", "Public Sans", sans-serif;
+  --font-body-sm: "Inter", "Public Sans", sans-serif;
+  --font-label-md: "Inter", "Public Sans", sans-serif;
+  --font-label-sm: "Inter", "Public Sans", sans-serif;
   --font-mono-data: "JetBrains Mono", monospace;
   --font-mono-code: "JetBrains Mono", monospace;
-
-  --spacing-space-xs: 0.25rem;
-  --spacing-space-sm: 0.5rem;
-  --spacing-space-md: 0.75rem;
-  --spacing-space-lg: 1.25rem;
-  --spacing-space-xl: 2rem;
-  --spacing-gutter: 1.25rem;
-  --spacing-gutter-desktop: 1.5rem;
-  --spacing-margin: 1rem;
-  --spacing-margin-tablet: 1.5rem;
-  --spacing-margin-desktop: 2rem;
 }
 
 @layer base {
   body {
-    font-family: 'Public Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    color: #0b1c30;
-    background-color: #f8f9ff;
+    font-family: 'Inter', 'Public Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    color: #0f172a;
+    background-color: #f0f4f9;
   }
 }
 
+/* Crisp Executive SaaS Cards */
+.saas-card {
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04), 0 1px 2px -1px rgba(0, 0, 0, 0.04);
+}
+
+.saas-card-hover:hover {
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px -2px rgba(0, 0, 0, 0.06);
+}
+
+/* Glass effect for hero and overlays */
+.hero-glass-card {
+  background: rgba(255, 255, 255, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.12);
+}
+
+/* Pulse animation for live indicators */
+@keyframes live-pulse {
+  0% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { transform: scale(1); opacity: 1; box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+  100% { transform: scale(0.95); opacity: 0.8; box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+.live-dot {
+  animation: live-pulse 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
+}
+
+/* Material Symbols configuration */
 .material-symbols-outlined {
   font-family: 'Material Symbols Outlined';
   font-weight: normal;
   font-style: normal;
-  font-size: 20px;
+  font-size: 24px;
   line-height: 1;
   letter-spacing: normal;
   text-transform: none;
@@ -97,13 +87,4 @@
   text-rendering: optimizeLegibility;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'liga';
-}
-
-/* Custom scrollbar hiding where needed */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
-}
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
 }

@@ -21,31 +21,32 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onCloseMobile,
 }) => {
   const t = useT();
+
   const navItems: { group: string; items: { id: NavigationTab; label: string; icon: string }[] }[] = [
     {
-      group: 'Core',
+      group: 'CORE',
       items: [
-        { id: 'dashboard', label: 'Dashboard', icon: 'grid_view' },
-        { id: 'report-a-problem', label: 'Report a Problem', icon: 'add_alert' },
+        { id: 'dashboard', label: 'Dashboard', icon: 'home' },
+        { id: 'report-a-problem', label: 'Report a Problem', icon: 'notifications_active' },
         { id: 'explore-issues', label: 'Explore Issues', icon: 'explore' },
-        { id: 'evidence-explorer', label: 'Evidence Explorer', icon: 'database' },
+        { id: 'evidence-explorer', label: 'Evidence Explorer', icon: 'layers' },
         { id: 'priority-insights', label: 'Priority Insights', icon: 'trending_up' },
       ],
     },
     {
-      group: 'Data & Research',
+      group: 'DATA & RESEARCH',
       items: [
-        { id: 'data-sources', label: 'Data Sources', icon: 'layers' },
-        { id: 'analytics', label: 'Analytics', icon: 'query_stats' },
+        { id: 'data-sources', label: 'Data Sources', icon: 'dataset' },
+        { id: 'analytics', label: 'Analytics', icon: 'insights' },
         { id: 'my-reports', label: 'My Reports', icon: 'description' },
       ],
     },
     {
-      group: 'Platform',
+      group: 'PLATFORM',
       items: [
         { id: 'how-it-works', label: 'How It Works', icon: 'account_tree' },
-        { id: 'tech-architecture', label: 'Tech Architecture', icon: 'terminal' },
-        { id: 'system-monitoring', label: 'System Monitoring', icon: 'verified_user' },
+        { id: 'tech-architecture', label: 'Tech Architecture', icon: 'developer_board' },
+        { id: 'system-monitoring', label: 'System Monitoring', icon: 'security' },
         { id: 'settings', label: 'Settings', icon: 'settings' },
       ],
     },
@@ -56,146 +57,117 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Mobile backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs z-40 lg:hidden"
+          className="fixed inset-0 bg-black/70 backdrop-blur-sm z-40 lg:hidden"
           onClick={onCloseMobile}
         />
       )}
 
       <aside
-        className={`fixed left-0 top-0 h-full w-72 bg-[#ffffff] shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-50 flex flex-col justify-between overflow-y-auto transition-transform duration-200 lg:translate-x-0 ${
+        className={`fixed left-0 top-0 h-full w-72 bg-[#08101d] border-r border-[#1a2b44] z-50 flex flex-col justify-between overflow-y-auto transition-transform duration-200 lg:translate-x-0 ${
           isMobileOpen ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         <div className="flex flex-col">
           {/* Brand header */}
-          <div className="h-16 px-4 flex items-center justify-between bg-[#eff4ff] border-b border-[#e5eeff]">
+          <div className="h-16 px-4 flex items-center justify-between border-b border-[#16253b] bg-[#070d18]">
             <div
               className="flex items-center gap-2.5 cursor-pointer"
               onClick={() => onNavigate('dashboard')}
             >
-              <img
-                alt="NagrikLens AI Brand Logo"
-                className="h-8 w-auto object-contain"
-                src={ASSETS.logo}
-                onError={(e) => {
-                  // Fallback if image blocked
-                  (e.target as HTMLElement).style.display = 'none';
-                }}
-              />
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00c49f] to-[#0284c7] flex items-center justify-center shadow-[0_0_12px_rgba(0,196,159,0.35)]">
+                <span className="material-symbols-outlined text-[20px] text-[#070d18] font-bold">hub</span>
+              </div>
               <div className="flex flex-col">
-                <span className="font-semibold text-[15px] text-[#0b1c30] tracking-tight leading-tight">
+                <span className="font-bold text-[15px] text-[#ffffff] tracking-tight leading-tight">
                   NagrikLens AI
                 </span>
-                <span className="font-mono text-[11px] text-[#006a61] tracking-wider uppercase font-semibold">
+                <span className="font-mono text-[10px] text-[#2dd4bf] tracking-wider uppercase font-semibold">
                   Civic Intelligence
                 </span>
               </div>
             </div>
-            <span className="px-1.5 py-0.5 rounded bg-[#e5eeff] text-[#45464d] font-mono text-[11px] uppercase font-semibold">
+            <span className="px-2 py-0.5 rounded-full bg-[#162b45] text-[#94a3b8] font-mono text-[11px] font-semibold border border-[#233d60]">
               v1.2
             </span>
           </div>
 
           {/* Active Role status pill */}
-          <div className="px-4 py-2.5">
-            <div className="bg-[#eff4ff] rounded p-1 flex items-center justify-between">
-              <span className="font-semibold text-[11px] text-[#45464d] uppercase tracking-wider pl-1.5">
+          <div className="px-4 pt-3.5 pb-2">
+            <div className="bg-[#0e1c30] rounded-lg p-2 flex items-center justify-between border border-[#1b3152]">
+              <span className="font-semibold text-[10px] text-[#94a3b8] uppercase tracking-wider pl-1 font-mono">
                 {t('Active Role')}
               </span>
-              <span className="px-2 py-0.5 rounded bg-[#86f2e4] text-[#005049] font-semibold text-[11px]">
-                {t(activeRole)} {t('View')}
-              </span>
+              <div className="relative">
+                <select
+                  value={activeRole}
+                  onChange={(e) => onRoleChange(e.target.value as UserRole)}
+                  aria-label={t('Active Role')}
+                  className="appearance-none bg-[#0a2f32] text-[#2dd4bf] font-semibold text-[11px] px-2.5 py-1 pr-6 rounded-md border border-[#145d58] cursor-pointer outline-none hover:bg-[#0d3b3f] transition-colors"
+                >
+                  <option value="Analyst">{t('Analyst')}</option>
+                  <option value="Executive">{t('Executive')}</option>
+                  <option value="Field Officer">{t('Field Officer')}</option>
+                  <option value="Citizen">{t('Citizen')}</option>
+                </select>
+                <span className="material-symbols-outlined text-[14px] text-[#2dd4bf] absolute right-1.5 top-1/2 -translate-y-1/2 pointer-events-none">
+                  arrow_drop_down
+                </span>
+              </div>
             </div>
           </div>
 
           {/* Navigation link groups */}
-          <nav className="flex flex-col px-2 py-1 gap-0.5">
+          <nav className="flex flex-col px-3 py-1 gap-1">
             {navItems.map((group) => (
-              <div key={group.group} className="flex flex-col">
-                <div className="px-2.5 pt-3 pb-1 font-semibold text-[11px] uppercase tracking-wider text-[#76777d]">
+              <div key={group.group} className="flex flex-col mt-2">
+                <div className="px-3 pt-2 pb-1 font-mono text-[10px] font-bold uppercase tracking-wider text-[#64748b]">
                   {t(group.group)}
                 </div>
-                {group.items.map((item) => {
-                  const isActive = currentTab === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        onNavigate(item.id);
-                        if (onCloseMobile) onCloseMobile();
-                      }}
-                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded text-left transition-colors text-[14px] ${
-                        isActive
-                          ? 'bg-[#131b2e] text-[#ffffff] font-semibold shadow-xs'
-                          : 'text-[#45464d] hover:bg-[#dce9ff] hover:text-[#0b1c30]'
-                      }`}
-                    >
-                      <span
-                        className={`material-symbols-outlined text-[20px] ${
-                          isActive ? 'text-[#89f5e7]' : 'text-[#76777d]'
+                <div className="flex flex-col gap-0.5">
+                  {group.items.map((item) => {
+                    const isActive = currentTab === item.id;
+                    return (
+                      <button
+                        key={item.id}
+                        type="button"
+                        onClick={() => {
+                          onNavigate(item.id);
+                          if (onCloseMobile) onCloseMobile();
+                        }}
+                        className={`group flex items-center gap-3 px-3 py-2 rounded-lg text-[13px] font-medium transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[#0e2d36] text-[#2dd4bf] font-semibold border-l-3 border-[#00c49f] shadow-[0_0_12px_rgba(0,196,159,0.15)]'
+                            : 'text-[#94a3b8] hover:text-[#f8fafc] hover:bg-[#112138]'
                         }`}
                       >
-                        {item.icon}
-                      </span>
-                      <span>{t(item.label)}</span>
-                    </button>
-                  );
-                })}
+                        <span
+                          className={`material-symbols-outlined text-[20px] transition-transform group-hover:scale-110 ${
+                            isActive ? 'text-[#2dd4bf]' : 'text-[#64748b] group-hover:text-[#94a3b8]'
+                          }`}
+                        >
+                          {item.icon}
+                        </span>
+                        <span className="truncate">{t(item.label)}</span>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             ))}
           </nav>
         </div>
 
-        {/* Bottom Role Switcher & Profile Bar */}
-        <div className="p-2.5 bg-[#eff4ff] border-t border-[#e5eeff] flex flex-col gap-2">
-          {/* Quick Role Switcher Buttons */}
-          <div className="bg-[#ffffff] rounded p-1 flex items-center justify-between border border-[#dce9ff]">
-            {(['Citizen', 'Analyst', 'Admin'] as UserRole[]).map((role) => {
-              const isSelected = activeRole === role;
-              return (
-                <button
-                  key={role}
-                  type="button"
-                  onClick={() => onRoleChange(role)}
-                  className={`flex-1 py-1 text-center text-[11px] font-semibold rounded transition-colors ${
-                    isSelected
-                      ? 'bg-[#000000] text-[#ffffff] shadow-xs'
-                      : 'text-[#45464d] hover:text-[#0b1c30] hover:bg-[#dce9ff]'
-                  }`}
-                >
-                  {t(role)}
-                </button>
-              );
-            })}
-          </div>
-
-          {/* User Profile Bar */}
-          <div
-            className="flex items-center gap-2.5 p-1.5 rounded bg-[#ffffff] border border-[#dce9ff] cursor-pointer hover:bg-[#f8f9ff] transition-colors"
-            onClick={() => onNavigate('settings')}
-            title="View Profile Settings"
-          >
-            <img
-              alt="Dr. Anita Sharma profile"
-              className="w-8 h-8 rounded-full object-cover shrink-0 ring-1 ring-[#006a61]"
-              src={ASSETS.profile}
-            />
-            <div className="flex flex-col min-w-0 flex-1">
-              <span className="text-[13px] text-[#0b1c30] truncate font-semibold leading-tight">
-                Dr. Anita Sharma
-              </span>
-              <span className="text-[11px] text-[#45464d] truncate leading-tight">
-                {activeRole === 'Citizen'
-                  ? 'Ward 4 Resident'
-                  : activeRole === 'Admin'
-                  ? 'Chief Municipal Commissioner'
-                  : 'Civic Researcher'}
-              </span>
+        {/* Bottom promo / community card */}
+        <div className="p-3 m-3 rounded-xl bg-gradient-to-t from-[#060c16] to-[#0e1b30] border border-[#1b3152] relative overflow-hidden group">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-[#00c49f]/10 via-transparent to-transparent opacity-80" />
+          <div className="relative z-10 flex flex-col gap-1.5">
+            <div className="flex items-center gap-1.5 text-[#2dd4bf]">
+              <span className="material-symbols-outlined text-[16px]">location_city</span>
+              <span className="font-bold text-[12px] text-white">Better Cities.</span>
             </div>
-            <span className="material-symbols-outlined text-[#76777d] text-[18px]">
-              unfold_more
-            </span>
+            <p className="text-[11px] text-[#94a3b8] leading-tight">
+              Stronger Communities.
+            </p>
           </div>
         </div>
       </aside>

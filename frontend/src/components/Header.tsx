@@ -21,13 +21,14 @@ export const Header: React.FC<HeaderProps> = ({
   const t = useT();
   const [searchQuery, setSearchQuery] = useState('');
   const [showNotifications, setShowNotifications] = useState(false);
-  const [unreadCount, setUnreadCount] = useState(2);
+  const [selectedDistrict, setSelectedDistrict] = useState('Dharashiv District');
+  const [unreadCount, setUnreadCount] = useState(1);
 
   const notifications = [
     {
       id: 1,
-      title: 'JJM Telemetry Stream Synced',
-      desc: 'Ward 4 PHC pipeline flow data corroborated (Chunk #8812).',
+      title: 'JJM Telemetry Stream Corroborated',
+      desc: 'Ward 4 PHC pipeline flow data verified against OGD baseline records.',
       time: '12m ago',
       unread: true,
       tab: 'evidence-explorer' as NavigationTab,
@@ -35,42 +36,34 @@ export const Header: React.FC<HeaderProps> = ({
     {
       id: 2,
       title: 'Priority Signal Alert (72/100)',
-      desc: 'Ward 4 Water Infrastructure Deficit marked for Junior Engineer dispatch.',
+      desc: 'Ward 4 Water Infrastructure Deficit marked for municipal engineer dispatch.',
       time: '24m ago',
-      unread: true,
-      tab: 'priority-insights' as NavigationTab,
-    },
-    {
-      id: 3,
-      title: 'Resolved Sanitation Notice',
-      desc: 'ZP High School drain blockage closed per Municipal Order #2024-DHA-904.',
-      time: '2d ago',
       unread: false,
-      tab: 'dashboard' as NavigationTab,
+      tab: 'priority-insights' as NavigationTab,
     },
   ];
 
   return (
-    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-[#f8f9ff]/85 backdrop-blur-xl border-b border-[#e5eeff] shadow-[0_1px_8px_rgba(0,0,0,0.04)] z-40 px-4 lg:px-6 flex items-center justify-between gap-3">
-      {/* Mobile hamburger & search */}
-      <div className="flex items-center gap-3 flex-1 max-w-2xl">
+    <header className="fixed top-0 left-0 lg:left-72 right-0 h-16 bg-white border-b border-slate-200 shadow-xs z-40 px-4 lg:px-6 flex items-center justify-between gap-4 font-sans">
+      {/* Mobile hamburger & Global Search */}
+      <div className="flex items-center gap-3 flex-1 max-w-xl">
         <button
           type="button"
           onClick={onOpenMobileMenu}
-          className="p-1.5 rounded-lg text-[#45464d] hover:bg-[#dce9ff] lg:hidden"
+          className="p-2 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 lg:hidden"
           title={t('Open Menu')}
         >
           <span className="material-symbols-outlined text-[24px]">menu</span>
         </button>
 
-        {/* Global Search Bar */}
-        <div className="flex items-center gap-2 bg-[#eff4ff] px-3 py-1.5 rounded w-full border border-[#dce9ff] focus-within:border-[#006a61] transition-colors">
-          <span className="material-symbols-outlined text-[#76777d] text-[20px]">
+        {/* Global Search Bar with Cmd+K Badge */}
+        <div className="flex items-center gap-2.5 bg-slate-50 px-3.5 py-1.5 rounded-lg w-full border border-slate-200 focus-within:border-[#00897b] focus-within:bg-white focus-within:ring-2 focus-within:ring-[#00897b]/20 transition-all">
+          <span className="material-symbols-outlined text-slate-400 text-[18px]">
             search
           </span>
           <input
-            className="bg-transparent w-full outline-none text-[13px] text-[#0b1c30] placeholder:text-[#76777d]"
-            placeholder={t('Search datasets, municipal reports, or Ward GeoIDs...')}
+            className="bg-transparent w-full outline-none text-[13px] text-slate-800 placeholder:text-slate-400"
+            placeholder={t('Search datasets, reports, wards, or ask a question...')}
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
@@ -80,27 +73,44 @@ export const Header: React.FC<HeaderProps> = ({
               }
             }}
           />
-          {searchQuery && (
+          {searchQuery ? (
             <button
               type="button"
               onClick={() => setSearchQuery('')}
-              className="text-[#76777d] hover:text-[#0b1c30] text-[16px]"
+              className="text-slate-400 hover:text-slate-700 text-[16px]"
             >
               <span className="material-symbols-outlined text-[16px]">close</span>
             </button>
+          ) : (
+            <kbd className="hidden sm:inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded bg-white text-slate-500 font-mono text-[10px] font-semibold border border-slate-200 shadow-2xs">
+              ⌘ K
+            </kbd>
           )}
         </div>
-
-        {/* Demo Mode Badge */}
-        <span className="hidden sm:inline-flex items-center px-2 py-0.5 rounded bg-[#e5eeff] text-[#45464d] font-mono text-[11px] font-semibold whitespace-nowrap border border-[#dce9ff]">
-          {t('Demo Mode')}
-        </span>
       </div>
 
-      {/* Right control cluster: Language, Notifications, User profile */}
+      {/* Right Control Cluster */}
       <div className="flex items-center gap-3 shrink-0">
-        {/* Language switcher */}
-        <div className="flex items-center bg-[#eff4ff] border border-[#dce9ff] rounded p-0.5 text-[12px]">
+        {/* District Selector Pill */}
+        <div className="hidden md:flex items-center gap-1.5 bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-[12px] font-medium text-slate-700 shadow-2xs">
+          <span className="material-symbols-outlined text-[16px] text-rose-500">
+            location_on
+          </span>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+            aria-label="Select Geographic District Scope"
+            className="bg-transparent text-slate-700 font-semibold text-[12px] outline-none cursor-pointer pr-1"
+          >
+            <option value="Dharashiv District">Dharashiv District</option>
+            <option value="Pune District">Pune District</option>
+            <option value="Nagpur District">Nagpur District</option>
+            <option value="Nashik District">Nashik District</option>
+          </select>
+        </div>
+
+        {/* Language Switcher */}
+        <div className="flex items-center bg-slate-100 border border-slate-200 rounded-lg p-0.5 text-[11px]">
           {(['EN', 'HI', 'GU'] as AppLanguage[]).map((lang) => {
             const isCurrent = language === lang;
             const label = lang === 'EN' ? 'EN' : lang === 'HI' ? 'हिन्दी' : 'ગુજરાતી';
@@ -109,10 +119,10 @@ export const Header: React.FC<HeaderProps> = ({
                 key={lang}
                 type="button"
                 onClick={() => onLanguageChange(lang)}
-                className={`px-2 py-0.5 rounded transition-all font-semibold ${
+                className={`px-2 py-1 rounded-md transition-all font-semibold cursor-pointer ${
                   isCurrent
-                    ? 'text-[#0b1c30] bg-[#ffffff] shadow-xs'
-                    : 'text-[#45464d] hover:text-[#0b1c30]'
+                    ? 'text-slate-900 bg-white shadow-xs border border-slate-200'
+                    : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
                 {label}
@@ -121,105 +131,73 @@ export const Header: React.FC<HeaderProps> = ({
           })}
         </div>
 
-        {/* Notifications toggle button */}
+        {/* Notifications Icon with Badge */}
         <div className="relative">
           <button
             type="button"
             onClick={() => {
               setShowNotifications(!showNotifications);
-              if (!showNotifications) setUnreadCount(0);
+              if (unreadCount > 0) setUnreadCount(0);
             }}
-            className="relative p-1.5 rounded hover:bg-[#dce9ff] transition-colors text-[#45464d] hover:text-[#0b1c30]"
-            title={t('Notifications')}
+            className="p-2 rounded-lg bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors relative cursor-pointer shadow-2xs"
+            title="Notifications"
           >
-            <span className="material-symbols-outlined text-[22px]">notifications</span>
+            <span className="material-symbols-outlined text-[20px]">notifications</span>
             {unreadCount > 0 && (
-              <span className="absolute top-1 right-1 w-2 h-2 rounded-full bg-[#ba1a1a] animate-pulse"></span>
+              <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-rose-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
+                {unreadCount}
+              </span>
             )}
           </button>
 
-          {/* Notifications Dropdown Panel */}
+          {/* Notifications Dropdown */}
           {showNotifications && (
-            <div className="absolute right-0 top-full mt-2 w-80 sm:w-96 bg-[#ffffff] rounded-xl shadow-xl border border-[#dce9ff] p-3 z-50 animate-in fade-in zoom-in-95 duration-150">
-              <div className="flex items-center justify-between pb-2 border-b border-[#eff4ff]">
-                <div className="flex items-center gap-1.5">
-                  <span className="font-semibold text-[13px] text-[#0b1c30]">
-                    {t('System Telemetry Feeds')}
-                  </span>
-                  <span className="px-1.5 py-0.2 rounded bg-[#eff4ff] text-[#006a61] font-mono text-[10px] font-semibold">
-                    LIVE
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setShowNotifications(false)}
-                  className="text-[#76777d] hover:text-[#0b1c30] text-[16px]"
-                >
-                  <span className="material-symbols-outlined text-[16px]">close</span>
-                </button>
+            <div className="absolute right-0 mt-2 w-80 rounded-xl bg-white border border-slate-200 shadow-xl p-3 z-50 animate-in fade-in slide-in-from-top-2">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <span className="font-bold text-[13px] text-slate-800">Notifications</span>
+                <span className="font-mono text-[10px] text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">Live Telemetry</span>
               </div>
-
-              <div className="flex flex-col divide-y divide-[#eff4ff] my-1">
-                {notifications.map((item) => (
+              <div className="flex flex-col gap-1.5 mt-2">
+                {notifications.map((n) => (
                   <div
-                    key={item.id}
+                    key={n.id}
                     onClick={() => {
-                      onNavigate(item.tab);
+                      onNavigate(n.tab);
                       setShowNotifications(false);
                     }}
-                    className={`py-2 px-1 hover:bg-[#eff4ff] rounded cursor-pointer transition-colors flex flex-col gap-0.5 ${
-                      item.unread ? 'bg-[#eff4ff]/40' : ''
-                    }`}
+                    className="p-2.5 rounded-lg hover:bg-slate-50 transition-colors cursor-pointer border border-transparent hover:border-slate-200"
                   >
-                    <div className="flex items-center justify-between text-[12px]">
-                      <span className="font-semibold text-[#0b1c30]">{item.title}</span>
-                      <span className="font-mono text-[10px] text-[#76777d]">{item.time}</span>
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-[12px] text-slate-800">{n.title}</span>
+                      <span className="text-[10px] text-slate-400">{n.time}</span>
                     </div>
-                    <p className="text-[11px] text-[#45464d] line-clamp-1">{item.desc}</p>
+                    <p className="text-[11px] text-slate-600 mt-0.5 leading-tight">{n.desc}</p>
                   </div>
                 ))}
-              </div>
-
-              <div className="pt-2 border-t border-[#eff4ff] flex items-center justify-between text-[11px]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    onNavigate('system-monitoring');
-                    setShowNotifications(false);
-                  }}
-                  className="text-[#006a61] font-semibold hover:underline"
-                >
-                  {t('System Monitoring')} →
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowNotifications(false)}
-                  className="text-[#76777d] hover:text-[#0b1c30]"
-                >
-                  {t('Dismiss')}
-                </button>
               </div>
             </div>
           )}
         </div>
 
-        {/* User profile capsule */}
-        <div
-          className="flex items-center gap-2 pl-1 cursor-pointer"
-          onClick={() => onNavigate('settings')}
-          title="Account Information"
-        >
-          <img
-            alt="Profile portrait"
-            className="w-8 h-8 rounded-full object-cover ring-1 ring-[#006a61]"
-            src={ASSETS.profile}
-          />
-          <div className="hidden xl:flex flex-col text-left">
-            <span className="text-[13px] text-[#0b1c30] font-semibold leading-none">
+        {/* User Profile Badge */}
+        <div className="flex items-center gap-2.5 pl-2 border-l border-slate-200">
+          <div className="relative">
+            <img
+              src={ASSETS.profile}
+              alt="Dr. Anita Sharma"
+              className="w-9 h-9 rounded-full object-cover ring-2 ring-emerald-600/30"
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+            <div className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+          </div>
+          <div className="hidden xl:flex flex-col text-left leading-tight">
+            <span className="font-bold text-[13px] text-slate-900 tracking-tight">
               Dr. Anita Sharma
             </span>
-            <span className="text-[11px] text-[#006a61] font-mono leading-none mt-1">
-              CIVIC-RES-409
+            <span className="font-mono text-[10px] text-slate-500">
+              Analyst • <span className="text-[#00897b] font-bold">CIVIC-RES-409</span>
             </span>
           </div>
         </div>

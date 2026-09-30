@@ -100,7 +100,7 @@ export default function App() {
 
   return (
     <LanguageContext.Provider value={language}>
-    <div className="min-h-screen bg-[#f8f9ff] text-[#0b1c30] flex">
+    <div className="min-h-screen bg-[#f0f4f9] text-[#0f172a] flex font-sans">
       {/* Sidebar Navigation */}
       <Sidebar
         currentTab={currentTab}
