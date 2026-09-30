@@ -2,9 +2,14 @@ import React, { useEffect, useState } from 'react';
 import {
   AnalyticsOverview,
   fetchAnalyticsOverviewApi,
-  fetchCategoryBreakdownApi,
-  fetchGeographicBreakdownApi,
-  fetchEvidenceStatsApi,
+  fetchCategoryAnalyticsApi,
+  fetchGeographicAnalyticsApi,
+  fetchEvidenceCoverageAnalyticsApi,
+  fetchSeverityAnalyticsApi,
+  CategoryDemandMetric,
+  GeographicDemandMetric,
+  EvidenceCoverageResponse,
+  SeverityAnalyticsResponse,
 } from '../../api/analytics';
 import { useT } from '../../i18n';
 
@@ -12,18 +17,15 @@ interface AnalyticsViewProps {
   onShowToast: (title: string, desc: string, type?: 'success' | 'info' | 'warning') => void;
 }
 
-type CategoryCount = { category: string; count: number };
-type GeographyCount = { state: string; district: string; count: number };
-type EvidenceCount = { coverage: string; count: number };
-
 const csvCell = (value: string | number) => `"${String(value).replaceAll('"', '""')}"`;
 
 export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => {
   const t = useT();
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
-  const [categories, setCategories] = useState<CategoryCount[]>([]);
-  const [geographies, setGeographies] = useState<GeographyCount[]>([]);
-  const [evidenceStats, setEvidenceStats] = useState<EvidenceCount[]>([]);
+  const [categories, setCategories] = useState<CategoryDemandMetric[]>([]);
+  const [geographies, setGeographies] = useState<GeographicDemandMetric[]>([]);
+  const [evidenceCoverage, setEvidenceCoverage] = useState<EvidenceCoverageResponse | null>(null);
+  const [severity, setSeverity] = useState<SeverityAnalyticsResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,15 +33,17 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
     let isActive = true;
     Promise.all([
       fetchAnalyticsOverviewApi(),
-      fetchCategoryBreakdownApi(),
-      fetchGeographicBreakdownApi(),
-      fetchEvidenceStatsApi(),
-    ]).then(([overviewData, categoryData, geographyData, evidenceData]) => {
+      fetchCategoryAnalyticsApi(),
+      fetchGeographicAnalyticsApi(),
+      fetchEvidenceCoverageAnalyticsApi(),
+      fetchSeverityAnalyticsApi(),
+    ]).then(([overviewData, categoryData, geographyData, evidenceData, severityData]) => {
       if (!isActive) return;
       setOverview(overviewData);
-      setCategories(categoryData);
-      setGeographies(geographyData);
-      setEvidenceStats(evidenceData);
+      setCategories(categoryData.categories);
+      setGeographies(geographyData.locations);
+      setEvidenceCoverage(evidenceData);
+      setSeverity(severityData);
       setError(null);
     }).catch((loadError: unknown) => {
       if (!isActive) return;
@@ -54,23 +58,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
     if (!overview) return;
     const rows: (string | number)[][] = [
       ['Metric', 'Value'],
-      ['Total reports', overview.total_reports],
-      ['Active reports', overview.active_reports],
-      ['Analyzed reports', overview.analyzed_reports],
-      ['Resolved reports', overview.resolved_reports],
-      ['Evidence-backed reports', overview.evidence_backed_reports],
-      ['Insufficient-evidence reports', overview.insufficient_evidence_reports],
-      ['Registered datasets', overview.total_datasets],
-      ['Evidence records', overview.total_evidences],
+      ['Total requests', overview.total_requests],
+      ['Evidence-backed requests', overview.requests_with_evidence],
+      ['Pending evidence requests', overview.requests_without_evidence],
+      ['Priority assessments generated', overview.priority_assessments_generated],
+      ['Hotspot demand clusters', overview.hotspot_groups],
+      ['Verified public datasets', overview.verified_datasets],
+      ['Evidence records', overview.evidence_records],
       [],
-      ['Category', 'Report count'],
-      ...categories.map(({ category, count }) => [category, count]),
+      ['Category', 'Request count', 'Affected households', 'Percentage'],
+      ...categories.map((c) => [c.category, c.request_count, c.affected_households ?? 'Not reported', `${c.percentage}%`]),
       [],
-      ['State', 'District', 'Report count'],
-      ...geographies.map(({ state, district, count }) => [state, district, count]),
-      [],
-      ['Evidence coverage', 'Report count'],
-      ...evidenceStats.map(({ coverage, count }) => [coverage || 'Not analyzed', count]),
+      ['State', 'District', 'Locality', 'Request count', 'Affected households'],
+      ...geographies.map((g) => [g.state, g.district, g.locality || 'District-wide', g.request_count, g.affected_households ?? 'Not reported']),
     ];
     const csv = rows.map((row) => row.map((cell) => csvCell(cell ?? '')).join(',')).join('\r\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
@@ -79,19 +79,19 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
     link.download = `nagriklens-analytics-${new Date().toISOString().slice(0, 10)}.csv`;
     link.click();
     URL.revokeObjectURL(url);
-    onShowToast('Analytics exported', 'Downloaded current report and evidence totals.');
+    onShowToast('Analytics exported', 'Downloaded verified report and demand totals.');
   };
 
-  const maxCategoryCount = Math.max(1, ...categories.map((item) => item.count));
+  const maxCategoryCount = Math.max(1, ...categories.map((item) => item.request_count));
 
   return (
     <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
       <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">{t('Stored platform data')}</p>
-          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('Report analytics')}</h1>
+          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('Request Analytics')}</h1>
           <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
-            {t('Counts are calculated from reports, analyses, datasets, and evidence currently stored by this prototype.')}
+            {t('Verifiable aggregates calculated directly from citizen requests, evidence matches, datasets, and priority assessments.')}
           </p>
         </div>
         <button
@@ -112,14 +112,14 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
         <>
           <section className="grid grid-cols-2 gap-4 lg:grid-cols-4" aria-label="Report totals">
             {[
-              [t('Total reports'), overview.total_reports],
-              [t('Active reports'), overview.active_reports],
-              [t('Evidence-backed'), overview.evidence_backed_reports],
-              [t('Evidence records'), overview.total_evidences],
-              [t('Resolved reports'), overview.resolved_reports],
-              [t('Insufficient evidence'), overview.insufficient_evidence_reports],
-              [t('Registered datasets'), overview.total_datasets],
-              [t('Analyzed reports'), overview.analyzed_reports],
+              [t('Total requests'), overview.total_requests],
+              [t('Evidence-backed'), overview.requests_with_evidence],
+              [t('Pending evidence'), overview.requests_without_evidence],
+              [t('Priority assessments'), overview.priority_assessments_generated],
+              [t('Hotspot clusters'), overview.hotspot_groups],
+              [t('Evidence records'), overview.evidence_records],
+              [t('Verified datasets'), overview.verified_datasets],
+              [t('Coverage percentage'), evidenceCoverage?.coverage_percentage !== null && evidenceCoverage?.coverage_percentage !== undefined ? `${evidenceCoverage.coverage_percentage}%` : 'N/A'],
             ].map(([label, value]) => (
               <div key={label} className="border-y border-[#dce9ff] py-3">
                 <p className="text-[11px] font-semibold uppercase text-[#76777d]">{label}</p>
@@ -131,23 +131,29 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
             <section className="space-y-4" aria-labelledby="category-breakdown">
               <div className="border-b border-[#dce9ff] pb-2">
-                <h2 id="category-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">{t('Reports by category')}</h2>
+                <h2 id="category-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">{t('Requests by category')}</h2>
               </div>
-              {categories.length === 0 ? <p className="text-[13px] text-[#76777d]">No report categories available.</p> : categories.map((item) => (
+              {categories.length === 0 ? <p className="text-[13px] text-[#76777d]">No request categories available.</p> : categories.map((item) => (
                 <div key={item.category} className="space-y-1">
-                  <div className="flex justify-between text-[12px]"><span>{item.category}</span><span className="font-mono">{item.count}</span></div>
-                  <div className="h-2 bg-[#eff4ff]"><div className="h-full bg-[#006a61]" style={{ width: `${(item.count / maxCategoryCount) * 100}%` }} /></div>
+                  <div className="flex justify-between text-[12px]">
+                    <span>{t(item.category)}</span>
+                    <span className="font-mono">{item.request_count} ({item.percentage}%)</span>
+                  </div>
+                  <div className="h-2 bg-[#eff4ff]">
+                    <div className="h-full bg-[#006a61]" style={{ width: `${(item.request_count / maxCategoryCount) * 100}%` }} />
+                  </div>
                 </div>
               ))}
             </section>
 
             <section className="space-y-4" aria-labelledby="geography-breakdown">
               <div className="border-b border-[#dce9ff] pb-2">
-                <h2 id="geography-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">{t('Reports by geography')}</h2>
+                <h2 id="geography-breakdown" className="text-[16px] font-semibold text-[#0b1c30]">{t('Requests by geography')}</h2>
               </div>
-              {geographies.length === 0 ? <p className="text-[13px] text-[#76777d]">No report geography available.</p> : geographies.map((item) => (
-                <div key={`${item.state}-${item.district}`} className="flex justify-between border-b border-[#eff4ff] py-2 text-[13px]">
-                  <span>{item.district}, {item.state}</span><span className="font-mono">{item.count}</span>
+              {geographies.length === 0 ? <p className="text-[13px] text-[#76777d]">No report geography available.</p> : geographies.map((item, idx) => (
+                <div key={`${item.state}-${item.district}-${idx}`} className="flex justify-between border-b border-[#eff4ff] py-2 text-[13px]">
+                  <span>{item.locality ? `${item.locality}, ` : ''}{item.district}, {item.state}</span>
+                  <span className="font-mono font-bold text-[#0b1c30]">{item.request_count} requests</span>
                 </div>
               ))}
             </section>
