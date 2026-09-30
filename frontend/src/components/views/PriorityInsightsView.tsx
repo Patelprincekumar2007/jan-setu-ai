@@ -50,7 +50,7 @@ export const PriorityInsightsView: React.FC<PriorityInsightsViewProps> = ({ onSh
             <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
             <span>Deterministic Weighting Active</span>
           </div>
-          <div className="font-mono text-[11px] text-slate-500">LATENCY: 42ms</div>
+          <div className="font-mono text-[11px] text-slate-500">SPECIFICATION: TRI-FACTOR RISK MATRIX</div>
         </div>
       </div>
 

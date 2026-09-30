@@ -132,7 +132,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
           <div className="flex items-center gap-2 self-start md:self-auto bg-slate-50 px-3.5 py-1.5 rounded-lg border border-slate-200">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 live-dot" />
             <span className="font-mono text-[11px] text-slate-800 font-bold">
-              NLP Node #74 Ready
+              Embedding Retrieval Ready
             </span>
             <span className="font-mono text-[11px] text-slate-300">|</span>
             <span className="font-mono text-[11px] text-slate-500">
@@ -287,7 +287,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                   </span>
                   <span className="hidden sm:inline-flex items-center gap-1 font-mono text-[11px] text-teal-700 font-semibold">
                     <span className="material-symbols-outlined text-[14px]">bolt</span> Realtime
-                    Latency: 142ms
+                    Transcription Ready
                   </span>
                 </div>
                 <span className="font-mono text-[11px] text-slate-400 font-medium">
@@ -386,30 +386,23 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
               </div>
             </div>
 
-            {/* Impact Metrics Spark Visual */}
+            {/* Impact Metrics Visual */}
             <div className="p-3.5 bg-slate-50 rounded-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border border-slate-200">
               <div className="space-y-0.5">
                 <div className="text-[13px] font-bold text-slate-900">
-                  Calculated Civic Disruption Vector
+                  Priority Assessment Pipeline
                 </div>
                 <div className="font-mono text-[11px] text-slate-500">
-                  Baseline: Public Health Infrastructure Emergency
+                  Tripartite Risk Signal (Hazard, Vulnerability, Evidence)
                 </div>
               </div>
 
               <div className="flex items-center gap-3">
                 <div className="text-right">
-                  <span className="font-mono text-[18px] font-bold text-rose-600">0.892</span>
+                  <span className="font-mono text-[12px] font-bold text-teal-700">EVALUATED ON SUBMISSION</span>
                   <span className="block font-mono text-[10px] text-slate-400 font-bold">
-                    SEVERITY COEFFICIENT
+                    DETERMINISTIC SCALAR
                   </span>
-                </div>
-                <div className="w-24 h-6 flex items-end gap-1">
-                  <span className="w-1.5 h-3 bg-teal-500 rounded-xs" />
-                  <span className="w-1.5 h-4 bg-teal-500 rounded-xs" />
-                  <span className="w-1.5 h-5 bg-teal-600 rounded-xs" />
-                  <span className="w-1.5 h-6 bg-rose-500 rounded-xs" />
-                  <span className="w-1.5 h-6 bg-rose-600 rounded-xs animate-pulse" />
                 </div>
               </div>
             </div>
@@ -447,7 +440,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                       borewell_inspection_01.jpg
                     </span>
                     <span className="font-mono text-[10px] text-slate-500">
-                      2.4 MB • GPS EXIF Verified
+                      Field Photo Attached
                     </span>
                     <span className="text-[10px] text-teal-700 font-bold">
                       Visual anomaly: Dry pump seal
@@ -507,7 +500,7 @@ export const ReportProblemView: React.FC<ReportProblemViewProps> = ({
                 <span>Civic Category Classification</span>
               </label>
               <span className="font-mono text-[11px] text-teal-700 font-bold">
-                AI Match: 98.4%
+                AI classification available
               </span>
             </div>
 

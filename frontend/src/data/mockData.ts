@@ -39,7 +39,7 @@ export const PIPELINE_STEPS: PipelineStep[] = [
     stepId: 'retrieval',
     title: 'Evidence Retrieval',
     shortDesc: 'OGD, JJM & PMGSY vector stores',
-    fullDesc: 'Similarity lookup against 14 government open-data catalogs (Jal Jeevan Mission, PMGSY road registers, NHM facility logs) in sub-100ms.',
+    fullDesc: 'Similarity lookup against verified government open-data catalogs (Jal Jeevan Mission, PMGSY road registers, NHM facility logs).',
     stateBadge: 'STATE: RETRIEVING RECORDS',
     icon: 'folder_managed',
   },

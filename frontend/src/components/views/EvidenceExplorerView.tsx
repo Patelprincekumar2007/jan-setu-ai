@@ -149,7 +149,7 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
               Model: gemini-1.5-pro
             </span>
             <span className="px-2.5 py-1 rounded-lg bg-teal-50 text-teal-800 font-bold border border-teal-200">
-              Faithfulness: 96.8%
+              Grounded Verification: Active
             </span>
           </div>
         </div>
@@ -540,7 +540,7 @@ export const EvidenceExplorerView: React.FC<EvidenceExplorerViewProps> = ({
 
             <div className="flex items-center gap-3">
               <span className="font-mono text-[11px] px-3 py-1 rounded-full bg-teal-50 text-teal-800 font-bold border border-teal-200">
-                Total Pipeline Latency: 482ms
+                Pipeline Status: Grounded Verification Active
               </span>
               <button
                 type="button"

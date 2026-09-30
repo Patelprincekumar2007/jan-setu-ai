@@ -131,7 +131,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ onShowToast }) => 
               [t('Hotspot clusters'), overview.hotspot_groups, 'hub'],
               [t('Evidence records'), overview.evidence_records, 'database'],
               [t('Verified datasets'), overview.verified_datasets, 'folder_managed'],
-              [t('Coverage percentage'), evidenceCoverage?.coverage_percentage !== null && evidenceCoverage?.coverage_percentage !== undefined ? `${evidenceCoverage.coverage_percentage}%` : '84.2%', 'check_circle'],
+              [t('Coverage percentage'), evidenceCoverage?.coverage_percentage !== null && evidenceCoverage?.coverage_percentage !== undefined ? `${evidenceCoverage.coverage_percentage}%` : (overview.total_requests > 0 ? `${((overview.requests_with_evidence / overview.total_requests) * 100).toFixed(1)}%` : t('No data available')), 'check_circle'],
             ].map(([label, value, icon]) => (
               <div key={label as string} className="saas-card p-5 flex items-center justify-between">
                 <div>

@@ -69,7 +69,7 @@ export const HowItWorksView: React.FC<HowItWorksViewProps> = ({ onNavigate }) =>
             <span className="material-symbols-outlined text-[24px]">verified_user</span>
           </div>
           <h2 className="text-[17px] font-bold text-slate-900">
-            Zero Hallucination Grounding Guarantee
+            Evidence-Grounded Generation Guarantee
           </h2>
           <p className="text-[13px] text-slate-600 leading-relaxed">
             Every analytical observation must cite a verified public document chunk (Jal Jeevan Mission, PMGSY, NHM) with cosine similarity exceeding 0.82. Synthetic hallucinations are blocked at the prompt level.

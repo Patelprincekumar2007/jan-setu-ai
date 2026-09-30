@@ -36,7 +36,7 @@ export const TechArchitectureView: React.FC = () => {
           <div className="p-3 rounded-xl bg-slate-50 font-mono text-[11px] text-slate-700 border border-slate-200 space-y-1">
             <div><span className="text-slate-400">Embedding:</span> paraphrase-multilingual-MiniLM-L12-v2</div>
             <div><span className="text-slate-400">Context Length:</span> 1,024 tokens</div>
-            <div><span className="text-teal-700 font-bold">Inference Latency:</span> 142ms avg</div>
+            <div><span className="text-teal-700 font-bold">Inference Mode:</span> Direct Neural Embedding</div>
           </div>
         </div>
 
@@ -51,13 +51,13 @@ export const TechArchitectureView: React.FC = () => {
             </div>
             <h2 className="font-bold text-[17px] text-slate-900">FAISS Vector Grounding Store</h2>
             <p className="text-[13px] text-slate-600 leading-relaxed">
-              14 verified ministerial datasets (OGD, Jal Jeevan Mission, PMGSY, NHM) pre-chunked and indexed with inverted file flat indexing (IVFFlat) and spatial metadata filtering by Ward GeoID.
+              Verified ministerial datasets (OGD, Jal Jeevan Mission, PMGSY, NHM, SBM) pre-chunked and indexed with inverted file flat indexing (IVFFlat) and spatial metadata filtering by Ward GeoID.
             </p>
           </div>
           <div className="p-3 rounded-xl bg-slate-50 font-mono text-[11px] text-slate-700 border border-slate-200 space-y-1">
             <div><span className="text-slate-400">Vector DB:</span> FAISS (IVFFlat, Cosine Metric)</div>
-            <div><span className="text-slate-400">Collection Size:</span> 12,410 chunk records</div>
-            <div><span className="text-teal-700 font-bold">Lookup Latency:</span> 38ms (nprobe=8)</div>
+            <div><span className="text-slate-400">Index Structure:</span> Inverted File Flat Index</div>
+            <div><span className="text-teal-700 font-bold">Retrieval Metric:</span> Cosine Similarity</div>
           </div>
         </div>
 
@@ -77,8 +77,8 @@ export const TechArchitectureView: React.FC = () => {
           </div>
           <div className="p-3 rounded-xl bg-slate-50 font-mono text-[11px] text-slate-700 border border-slate-200 space-y-1">
             <div><span className="text-slate-400">Model:</span> gemini-1.5-pro</div>
-            <div><span className="text-slate-400">Faithfulness Score:</span> 96.8% (RAGAS)</div>
-            <div><span className="text-teal-700 font-bold">Audit Sign-off:</span> SHA-256 Ledger</div>
+            <div><span className="text-slate-400">Guardrail Mode:</span> Evidence-Grounded Generation</div>
+            <div><span className="text-teal-700 font-bold">Audit Trace:</span> Evidence-Grounded Output</div>
           </div>
         </div>
       </div>
