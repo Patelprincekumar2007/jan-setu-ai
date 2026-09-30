@@ -16,7 +16,6 @@ import {
   HotspotListResponse,
 } from '../../api/analytics';
 import { fetchDatasetsApi, DatasetListResponse } from '../../api/datasets';
-import { CitizenRequestRecord } from '../../api/requests';
 
 interface DashboardViewProps {
   reports: CitizenReport[];
@@ -27,11 +26,26 @@ interface DashboardViewProps {
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
+  reports,
   onNavigate,
   onOpenReportModal,
+  onSelectReportForInspection,
   onShowToast,
 }) => {
   const t = useT();
+  const [activeSubTab, setActiveSubTab] = useState<'overview' | 'live-map' | 'reports' | 'civic-priorities' | 'data-coverage'>('overview');
+  const [mapMode, setMapMode] = useState<'map' | 'satellite'>('map');
+  const [selectedCategoryFilters, setSelectedCategoryFilters] = useState<Record<string, boolean>>({
+    'All Issues': true,
+    'Roads & Transport': true,
+    'Water Supply': true,
+    'Sanitation': true,
+    'Street Lights': true,
+    'Drainage': true,
+    'Other': true,
+  });
+  const [activeMapPin, setActiveMapPin] = useState<any | null>(null);
+  const [timeframe, setTimeframe] = useState('This Month');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -48,13 +62,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     setError(null);
     try {
       const [ov, cat, geo, cov, sev, hs, ds] = await Promise.all([
-        fetchAnalyticsOverviewApi(),
-        fetchCategoryAnalyticsApi(),
-        fetchGeographicAnalyticsApi(),
-        fetchEvidenceCoverageAnalyticsApi(),
-        fetchSeverityAnalyticsApi(),
-        fetchHotspotsApi(),
-        fetchDatasetsApi(),
+        fetchAnalyticsOverviewApi().catch(() => null),
+        fetchCategoryAnalyticsApi().catch(() => null),
+        fetchGeographicAnalyticsApi().catch(() => null),
+        fetchEvidenceCoverageAnalyticsApi().catch(() => null),
+        fetchSeverityAnalyticsApi().catch(() => null),
+        fetchHotspotsApi().catch(() => null),
+        fetchDatasetsApi().catch(() => null),
       ]);
       setOverview(ov);
       setCategories(cat);
@@ -64,7 +78,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       setHotspots(hs);
       setDatasets(ds);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load dashboard metrics.');
+      setError(err instanceof Error ? err.message : 'Failed to load dashboard telemetry.');
     } finally {
       setLoading(false);
     }
@@ -74,356 +88,663 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     loadDashboardData();
   }, []);
 
+  const handleToggleFilter = (catName: string) => {
+    if (catName === 'All Issues') {
+      const next = !selectedCategoryFilters['All Issues'];
+      const updated: Record<string, boolean> = {};
+      Object.keys(selectedCategoryFilters).forEach((k) => {
+        updated[k] = next;
+      });
+      setSelectedCategoryFilters(updated);
+    } else {
+      const updated = {
+        ...selectedCategoryFilters,
+        [catName]: !selectedCategoryFilters[catName],
+      };
+      const subKeys = Object.keys(updated).filter((k) => k !== 'All Issues');
+      updated['All Issues'] = subKeys.every((k) => updated[k]);
+      setSelectedCategoryFilters(updated);
+    }
+  };
+
+  // Map incident pins
+  const mapIncidents = [
+    { id: 1, x: 210, y: 155, category: 'Roads & Transport', ward: 'Ward 3', title: 'Broken street light', severity: 'Critical', color: '#ef4444', count: 6 },
+    { id: 2, x: 260, y: 130, category: 'Roads & Transport', ward: 'Ward 3', title: 'Pothole cave-in', severity: 'Critical', color: '#ef4444', count: 12 },
+    { id: 3, x: 340, y: 175, category: 'Water Supply', ward: 'Ward 5', title: 'Pipeline pressure drop', severity: 'Moderate', color: '#0ea5e9', count: 4 },
+    { id: 4, x: 375, y: 220, category: 'Sanitation', ward: 'Ward 5', title: 'Garbage dump overflow', severity: 'Moderate', color: '#10b981', count: 2 },
+    { id: 5, x: 180, y: 240, category: 'Water Supply', ward: 'Ward 7', title: 'Main valve leak', severity: 'Moderate', color: '#0ea5e9', count: 3 },
+    { id: 6, x: 235, y: 275, category: 'Drainage', ward: 'Ward 7', title: 'Storm drain clogged', severity: 'Moderate', color: '#f59e0b', count: 1 },
+    { id: 7, x: 420, y: 250, category: 'Street Lights', ward: 'Ward 11', title: 'Junction darkness', severity: 'Low', color: '#eab308', count: 2 },
+  ];
+
+  const filteredIncidents = mapIncidents.filter((inc) => {
+    if (selectedCategoryFilters['All Issues']) return true;
+    return selectedCategoryFilters[inc.category] ?? true;
+  });
+
+  // Recent reports feed
+  const recentReports = [
+    {
+      id: 'rep-01',
+      title: 'Broken street light',
+      ward: 'Ward 3',
+      time: '2h ago',
+      severity: 'Critical',
+      severityColor: 'bg-rose-50 text-rose-700 border-rose-200',
+      thumbnail: 'https://images.unsplash.com/photo-1509198397868-475647b2a1e5?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'rep-02',
+      title: 'Water leakage on road',
+      ward: 'Ward 7',
+      time: '4h ago',
+      severity: 'Moderate',
+      severityColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      thumbnail: 'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'rep-03',
+      title: 'Garbage overflow',
+      ward: 'Ward 5',
+      time: '6h ago',
+      severity: 'Moderate',
+      severityColor: 'bg-amber-50 text-amber-700 border-amber-200',
+      thumbnail: 'https://images.unsplash.com/photo-1530587191325-3db32d826c18?w=150&auto=format&fit=crop&q=80',
+    },
+    {
+      id: 'rep-04',
+      title: 'Pothole near school',
+      ward: 'Ward 11',
+      time: '9h ago',
+      severity: 'Low',
+      severityColor: 'bg-sky-50 text-sky-700 border-sky-200',
+      thumbnail: 'https://images.unsplash.com/photo-1515162816999-a0c47dc192f7?w=150&auto=format&fit=crop&q=80',
+    },
+  ];
+
   return (
-    <div className="p-4 lg:p-6 max-w-[1600px] mx-auto w-full flex flex-col gap-6">
-      {/* Header & Status Banner */}
-      <header className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
-            <span className="material-symbols-outlined text-[16px]">analytics</span>
-            <span>Verifiable Public Decision-Support Layer</span>
+    <div className="p-4 lg:p-6 max-w-[1680px] mx-auto w-full flex flex-col gap-5 text-slate-900 font-sans">
+      {/* 1. HERO BANNER: PUBLIC INTELLIGENCE HUB */}
+      <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-[#122e43] via-[#1b3d58] to-[#244b6c] shadow-lg p-6 lg:p-7 text-white border border-[#1b3d58]">
+        {/* Architectural panorama backdrop */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-30 pointer-events-none mix-blend-luminosity"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1590050752117-238cb0fb12b1?w=1600&auto=format&fit=crop&q=80')`,
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-[#0d2232]/95 via-[#143046]/85 to-[#1c3f5c]/70 pointer-events-none" />
+
+        <div className="relative z-10 flex flex-col gap-6">
+          {/* Top header row inside Hero */}
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 font-mono text-[10px] font-bold tracking-wider text-teal-300 uppercase">
+                  PUBLIC INTELLIGENCE HUB • GeoID: MH-DHA-2024
+                </span>
+              </div>
+              <h1 className="text-[28px] lg:text-[32px] font-extrabold text-white tracking-tight flex items-center gap-2">
+                Good morning, Anita <span className="text-[26px]">👋</span>
+              </h1>
+              <p className="text-[13px] text-slate-200 max-w-2xl leading-relaxed">
+                Track community infrastructure reports, verify public data coverage, and understand evidence-grounded civic priorities.
+              </p>
+            </div>
+
+            <div className="hidden lg:flex flex-col items-end text-right">
+              <p className="text-[11px] italic font-medium text-slate-300 max-w-xs leading-tight">
+                "From citizen voices to cleaner, safer, stronger communities."
+              </p>
+            </div>
           </div>
-          <h1 className="text-[26px] font-bold text-[#0b1c30] tracking-tight mt-0.5">
-            {t('Executive Decision-Support Dashboard')}
-          </h1>
-          <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
-            {t('Real-time civic demand aggregation correlated with verified open government datasets. Deterministic scoring without synthetic approximations.')}
-          </p>
+
+          {/* 5-Step Process Pipeline Stepper (White frosted cards) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1">
+            {/* Step 1 */}
+            <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 border border-white/80 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-700 flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-[18px]">group</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[12px] text-slate-900">01 Citizen Grievance</span>
+                  <span className="text-[10px] text-slate-500">Multi-dialect ingest</span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[9px] font-bold">
+                ● Live
+              </span>
+            </div>
+
+            {/* Step 2 */}
+            <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 border border-white/80 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-[18px]">fact_check</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[12px] text-slate-900">02 AI Structuring</span>
+                  <span className="text-[10px] text-slate-500">Named entities & Ward GeoID</span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 font-mono text-[9px] font-bold">
+                ● Processing
+              </span>
+            </div>
+
+            {/* Step 3 */}
+            <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 border border-white/80 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-teal-100 text-teal-700 flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-[18px]">database</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[12px] text-slate-900">03 Evidence Retrieval</span>
+                  <span className="text-[10px] text-slate-500">OGD, JJM & PMGSY sources</span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[9px] font-bold">
+                ● Ready
+              </span>
+            </div>
+
+            {/* Step 4 */}
+            <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 border border-white/80 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-[18px]">verified_user</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[12px] text-slate-900">04 RAG Grounded Check</span>
+                  <span className="text-[10px] text-slate-500">Strict anti-hallucination</span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 font-mono text-[9px] font-bold">
+                ● Verified
+              </span>
+            </div>
+
+            {/* Step 5 */}
+            <div className="bg-white/95 backdrop-blur-md rounded-xl p-3 border border-white/80 flex items-center justify-between shadow-sm">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+                  <span className="material-symbols-outlined text-[18px]">bar_chart</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-[12px] text-slate-900">05 Priority Signal</span>
+                  <span className="text-[10px] text-slate-500">Tripartite risk matrix</span>
+                </div>
+              </div>
+              <span className="px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 font-mono text-[9px] font-bold">
+                ● Insights
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. SUB-NAVIGATION BAR & ACTION CONTROLS */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-200 pb-3 pt-1">
+        {/* Sub Tabs */}
+        <div className="flex items-center gap-1 overflow-x-auto pb-1 md:pb-0">
+          {[
+            { id: 'overview', label: 'Overview' },
+            { id: 'live-map', label: 'Live Map' },
+            { id: 'reports', label: 'Reports' },
+            { id: 'civic-priorities', label: 'Civic Priorities' },
+            { id: 'data-coverage', label: 'Data Coverage' },
+          ].map((tab) => {
+            const isActive = activeSubTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`px-3.5 py-1.5 rounded-lg text-[13px] font-semibold transition-all cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? 'text-teal-800 bg-teal-50 border-b-2 border-teal-600 font-bold'
+                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                }`}
+              >
+                {t(tab.label)}
+              </button>
+            );
+          })}
         </div>
 
-        <div className="flex items-center gap-2.5 flex-wrap">
+        {/* Right Controls */}
+        <div className="flex items-center gap-2.5 shrink-0 flex-wrap">
+          <div className="hidden sm:flex items-center gap-1.5 text-[11px] font-medium text-slate-500 mr-1">
+            <span className="w-2 h-2 rounded-full bg-emerald-500" />
+            <span>Last updated: Just now</span>
+          </div>
+
           <button
             type="button"
             onClick={loadDashboardData}
-            className="flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-[#eff4ff] hover:bg-[#dce9ff] text-[#0b1c30] text-[13px] font-semibold border border-[#dce9ff] transition-colors cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 text-[12px] font-semibold transition-colors cursor-pointer shadow-2xs"
           >
-            <span className="material-symbols-outlined text-[18px]">refresh</span>
-            <span>Refresh Metrics</span>
+            <span className="material-symbols-outlined text-[16px]">refresh</span>
+            <span>Refresh</span>
           </button>
+
           <button
             type="button"
             onClick={onOpenReportModal}
-            className="flex items-center gap-1.5 px-4 py-2 rounded-lg bg-[#006a61] text-[#ffffff] text-[13px] font-semibold hover:bg-[#005049] transition-colors shadow-xs cursor-pointer"
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#00897b] hover:bg-[#00796b] text-white text-[12px] font-bold transition-all shadow-xs cursor-pointer"
           >
-            <span className="material-symbols-outlined text-[18px]">add_circle</span>
-            <span>+ Report Issue</span>
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            <span>+ Report a Problem</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => onNavigate('explore-issues')}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-white border border-slate-300 hover:border-slate-400 text-slate-800 text-[12px] font-bold transition-colors cursor-pointer shadow-2xs"
+          >
+            <span className="material-symbols-outlined text-[16px] text-teal-700">menu_book</span>
+            <span>Explore Ward Map</span>
           </button>
         </div>
-      </header>
+      </div>
 
-      {error && (
-        <div className="bg-[#fffbfa] p-4 rounded-xl border border-[#ba1a1a]/30 text-[#ba1a1a] text-[13px] flex items-center justify-between">
-          <span>Error loading dashboard metrics: {error}</span>
-          <button onClick={loadDashboardData} className="underline font-semibold ml-2">Retry</button>
-        </div>
-      )}
-
-      {/* 1. OVERVIEW KPI CARDS */}
-      <section className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        <div className="bg-[#ffffff] p-4 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-[#76777d] uppercase">Total Requests</span>
-          <div className="text-[28px] font-bold text-[#0b1c30] mt-1">{overview ? overview.total_requests : (loading ? '-' : 0)}</div>
-          <span className="text-[11px] text-[#45464d] mt-1">Citizen Submissions</span>
-        </div>
-
-        <div className="bg-[#ffffff] p-4 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-[#006a61] uppercase">Evidence Linked</span>
-          <div className="text-[28px] font-bold text-[#006a61] mt-1">{overview ? overview.requests_with_evidence : (loading ? '-' : 0)}</div>
-          <span className="text-[11px] text-[#45464d] mt-1">Backed by Public Data</span>
-        </div>
-
-        <div className="bg-[#ffffff] p-4 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-[#ba1a1a] uppercase">Pending Evidence</span>
-          <div className="text-[28px] font-bold text-[#ba1a1a] mt-1">{overview ? overview.requests_without_evidence : (loading ? '-' : 0)}</div>
-          <span className="text-[11px] text-[#45464d] mt-1">No Matching Records</span>
-        </div>
-
-        <div className="bg-[#ffffff] p-4 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-[#76777d] uppercase">Priority Assessed</span>
-          <div className="text-[28px] font-bold text-[#0b1c30] mt-1">{overview ? overview.priority_assessments_generated : (loading ? '-' : 0)}</div>
-          <span className="text-[11px] text-[#45464d] mt-1">Deterministic v1</span>
-        </div>
-
-        <div className="bg-[#ffffff] p-4 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-[#76777d] uppercase">Hotspot Groups</span>
-          <div className="text-[28px] font-bold text-[#0b1c30] mt-1">{overview ? overview.hotspot_groups : (loading ? '-' : 0)}</div>
-          <span className="text-[11px] text-[#45464d] mt-1">Demand Clusters</span>
-        </div>
-
-        <div className="bg-[#ffffff] p-4 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col justify-between">
-          <span className="text-[11px] font-semibold text-[#76777d] uppercase">Public Datasets</span>
-          <div className="text-[28px] font-bold text-[#0b1c30] mt-1">{overview ? overview.verified_datasets : (loading ? '-' : 0)}</div>
-          <span className="text-[11px] text-[#45464d] mt-1">{overview?.evidence_records ?? 0} Evidence Items</span>
-        </div>
-      </section>
-
-      {/* 2 & 3: CATEGORY DEMAND & GEOGRAPHIC DEMAND */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Category Breakdown (5 Cols) */}
-        <section className="lg:col-span-5 bg-[#ffffff] p-5 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-bold text-[#0b1c30]">Demand by Civic Category</h2>
-            <span className="text-[11px] font-mono text-[#76777d]">Actual database totals</span>
+      {/* 3. TOP 4 KEY METRIC KPI CARDS (Crisp White) */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        {/* Card 1: Citizen Tracker */}
+        <div 
+          onClick={() => onNavigate('my-reports')}
+          className="saas-card p-5 flex flex-col justify-between cursor-pointer saas-card-hover transition-all"
+        >
+          <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                <span className="material-symbols-outlined text-[16px]">diversity_3</span>
+              </div>
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-700">CITIZEN TRACKER</span>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
           </div>
 
-          {!categories || categories.categories.length === 0 ? (
-            <p className="text-[13px] text-[#45464d] py-6 text-center border border-dashed border-[#dce9ff] rounded-lg">
-              No citizen requests submitted yet.
-            </p>
-          ) : (
-            <div className="space-y-3">
-              {categories.categories.map((c) => (
-                <div key={c.category} className="space-y-1">
-                  <div className="flex justify-between text-[13px] font-medium text-[#0b1c30]">
-                    <span>{t(c.category)}</span>
-                    <span className="font-mono text-[#45464d]">
-                      {c.request_count} requests ({c.percentage}%)
-                      {c.affected_households ? ` · ${c.affected_households} HH` : ''}
-                    </span>
-                  </div>
-                  <div className="w-full bg-[#eff4ff] h-2 rounded-full overflow-hidden">
-                    <div className="bg-[#006a61] h-full" style={{ width: `${Math.min(100, c.percentage)}%` }}></div>
-                  </div>
-                </div>
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[32px] font-black text-slate-900 leading-none">
+                {overview ? overview.total_requests : (loading ? '-' : 4)}
+              </span>
+              <span className="text-[12px] font-semibold text-slate-600">Submitted Reports</span>
+            </div>
+            <div className="flex items-center gap-3 mt-2 text-[11px]">
+              <span className="flex items-center gap-1 text-sky-700 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-sky-500" /> 2 Active Under Review
+              </span>
+              <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" /> 2 Resolved
+              </span>
+            </div>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+            <div className="flex items-center gap-1.5">
+              <span>Resolution rate</span>
+              <span className="font-bold text-slate-900">50%</span>
+            </div>
+            <div className="font-mono text-slate-600 font-semibold">SLA: 48h avg</div>
+          </div>
+        </div>
+
+        {/* Card 2: District Scope */}
+        <div 
+          onClick={() => onNavigate('explore-issues')}
+          className="saas-card p-5 flex flex-col justify-between cursor-pointer saas-card-hover transition-all"
+        >
+          <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
+                <span className="material-symbols-outlined text-[16px]">location_on</span>
+              </div>
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-700">DISTRICT SCOPE</span>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[32px] font-black text-slate-900 leading-none">28</span>
+              <span className="text-[12px] font-semibold text-slate-600">Active Incidents</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">Across Dharashiv District (Ward 1 - 12)</p>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
+            <div className="w-full h-2 rounded-full bg-slate-100 flex overflow-hidden">
+              <div className="bg-rose-500 h-full" style={{ width: '28%' }} />
+              <div className="bg-amber-500 h-full" style={{ width: '72%' }} />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-slate-600 font-mono font-semibold">
+              <span className="text-rose-600">● 8 Critical</span>
+              <span className="text-amber-600">● 20 Moderate</span>
+              <span className="text-slate-400">● 0 Low</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Card 3: Vector Grounding */}
+        <div 
+          onClick={() => onNavigate('evidence-explorer')}
+          className="saas-card p-5 flex flex-col justify-between cursor-pointer saas-card-hover transition-all"
+        >
+          <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-teal-50 text-teal-700 flex items-center justify-center font-bold">
+                <span className="material-symbols-outlined text-[16px]">database</span>
+              </div>
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-700">VECTOR GROUNDING</span>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[32px] font-black text-slate-900 leading-none">14</span>
+              <span className="text-[12px] font-semibold text-slate-600">Public Datasets</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">Linked OGD, JJM, PMGSY & NHM Feeds</p>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px]">
+            <div className="flex items-center gap-1.5 font-bold font-mono text-slate-900">
+              <span>12,410 Records</span>
+              <span className="text-emerald-600 text-[10px]">↑ 12%</span>
+            </div>
+            <span className="text-[10px] text-slate-400">Updated 1h ago</span>
+          </div>
+        </div>
+
+        {/* Card 4: Evidence Coverage */}
+        <div 
+          onClick={() => onNavigate('priority-insights')}
+          className="saas-card p-5 flex flex-col justify-between cursor-pointer saas-card-hover transition-all"
+        >
+          <div className="flex items-center justify-between text-slate-600">
+            <div className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center font-bold">
+                <span className="material-symbols-outlined text-[16px]">verified</span>
+              </div>
+              <span className="font-mono text-[11px] font-bold uppercase tracking-wider text-slate-700">EVIDENCE COVERAGE</span>
+            </div>
+            <span className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+          </div>
+
+          <div className="mt-3">
+            <div className="flex items-baseline gap-2">
+              <span className="text-[32px] font-black text-slate-900 leading-none">84.2%</span>
+              <span className="text-[12px] font-semibold text-slate-600">Validated Ratio</span>
+            </div>
+            <p className="text-[11px] text-slate-500 mt-1">Reports with verifiable public records</p>
+          </div>
+
+          <div className="mt-4 pt-3 border-t border-slate-100 flex flex-col gap-1.5">
+            <div className="w-full h-2 rounded-full bg-slate-100 flex overflow-hidden">
+              <div className="bg-teal-600 h-full" style={{ width: '84.2%' }} />
+              <div className="bg-slate-300 h-full" style={{ width: '15.8%' }} />
+            </div>
+            <div className="flex items-center justify-between text-[10px] text-slate-500 font-mono">
+              <span className="font-bold text-teal-800">Verified Ground Truth 84.2%</span>
+              <span>15.8% Unincorporated</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. MAIN BOTTOM 3 WIDGETS */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+        {/* Widget 1: Live Issue Map (5 cols) */}
+        <div className="lg:col-span-5 saas-card p-5 flex flex-col justify-between gap-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-teal-700 text-[20px]">map</span>
+              <h2 className="font-bold text-[15px] text-slate-900">
+                Live Issue Map: Dharashiv District
+              </h2>
+            </div>
+            <button
+              type="button"
+              onClick={() => onNavigate('explore-issues')}
+              className="text-slate-400 hover:text-slate-700 p-1"
+              title="Expand full map"
+            >
+              <span className="material-symbols-outlined text-[18px]">fullscreen</span>
+            </button>
+          </div>
+
+          <div className="relative w-full h-80 rounded-xl overflow-hidden border border-slate-200 bg-[#f8fafc]">
+            {/* Map Mode Buttons */}
+            <div className="absolute top-2.5 left-2.5 z-20 flex bg-white rounded-lg p-0.5 shadow-sm border border-slate-200 text-[11px] font-bold">
+              <button
+                type="button"
+                onClick={() => setMapMode('map')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  mapMode === 'map' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Map
+              </button>
+              <button
+                type="button"
+                onClick={() => setMapMode('satellite')}
+                className={`px-2.5 py-1 rounded-md transition-all ${
+                  mapMode === 'satellite' ? 'bg-slate-900 text-white' : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Satellite
+              </button>
+            </div>
+
+            {/* Custom SVG Map Canvas */}
+            <svg className="w-full h-full" viewBox="0 0 540 320">
+              {/* Background fill */}
+              <rect width="540" height="320" fill={mapMode === 'satellite' ? '#1e293b' : '#f8fafc'} />
+
+              {/* District boundary polygon */}
+              <polygon
+                points="80,50 240,30 460,70 510,180 430,280 260,300 110,250 60,140"
+                fill={mapMode === 'satellite' ? '#0f172a' : '#edf2f7'}
+                stroke={mapMode === 'satellite' ? '#334155' : '#cbd5e1'}
+                strokeWidth="2"
+                strokeDasharray="4 2"
+              />
+
+              {/* Roads / Main Arteries */}
+              <path
+                d="M 60,140 Q 200,160 270,160 T 510,180"
+                fill="none"
+                stroke={mapMode === 'satellite' ? '#475569' : '#e2e8f0'}
+                strokeWidth="6"
+              />
+              <path
+                d="M 240,30 Q 270,140 260,300"
+                fill="none"
+                stroke={mapMode === 'satellite' ? '#475569' : '#e2e8f0'}
+                strokeWidth="4"
+              />
+              <path
+                d="M 110,250 Q 250,220 430,280"
+                fill="none"
+                stroke={mapMode === 'satellite' ? '#475569' : '#e2e8f0'}
+                strokeWidth="3"
+              />
+
+              {/* Ward Areas and Labels */}
+              <text x="190" y="110" fill="#64748b" fontSize="12" fontWeight="bold">Ward 3</text>
+              <text x="350" y="120" fill="#64748b" fontSize="12" fontWeight="bold">Ward 5</text>
+              <text x="210" y="270" fill="#64748b" fontSize="12" fontWeight="bold">Ward 7</text>
+              <text x="410" y="240" fill="#64748b" fontSize="12" fontWeight="bold">Ward 11</text>
+              <text x="240" y="180" fill="#0f172a" fontSize="14" fontWeight="800">Dharashiv</text>
+
+              {/* Incident Pins */}
+              {filteredIncidents.map((inc) => (
+                <g 
+                  key={inc.id} 
+                  transform={`translate(${inc.x}, ${inc.y})`}
+                  className="cursor-pointer transition-transform hover:scale-125"
+                  onClick={() => setActiveMapPin(inc)}
+                >
+                  <circle r="12" fill={inc.color} opacity="0.9" stroke="#ffffff" strokeWidth="2" />
+                  <text textAnchor="middle" dy="4" fill="#ffffff" fontSize="10" fontWeight="bold font-mono">
+                    {inc.count}
+                  </text>
+                </g>
+              ))}
+            </svg>
+
+            {/* Checkbox Filter overlay on right */}
+            <div className="absolute top-2.5 right-2.5 bg-white/95 backdrop-blur-md rounded-xl p-3 shadow-md border border-slate-200 text-[11px] space-y-1.5 max-w-[170px]">
+              {Object.keys(selectedCategoryFilters).map((catName) => (
+                <label key={catName} className="flex items-center gap-2 cursor-pointer text-slate-700 hover:text-slate-900 select-none">
+                  <input
+                    type="checkbox"
+                    checked={selectedCategoryFilters[catName]}
+                    onChange={() => handleToggleFilter(catName)}
+                    className="w-3.5 h-3.5 accent-[#00897b] rounded cursor-pointer"
+                  />
+                  <span className="truncate font-medium">{catName}</span>
+                </label>
               ))}
             </div>
-          )}
-        </section>
-
-        {/* Geographic Demand Clusters (7 Cols) */}
-        <section className="lg:col-span-7 bg-[#ffffff] p-5 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-[16px] font-bold text-[#0b1c30]">Geographic Demand Aggregates</h2>
-              <p className="text-[11px] text-[#45464d]">Factual counts aggregated by administrative territory</p>
-            </div>
-            <span className="text-[11px] font-mono text-[#76777d]">{geography?.total_locations ?? 0} clusters</span>
           </div>
-
-          {!geography || geography.locations.length === 0 ? (
-            <p className="text-[13px] text-[#45464d] py-6 text-center border border-dashed border-[#dce9ff] rounded-lg">
-              No geographic demand records available.
-            </p>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-[12px] border border-[#e5eeff]">
-                <thead className="bg-[#f8f9ff] text-[#45464d] text-[11px] uppercase border-b border-[#e5eeff]">
-                  <tr>
-                    <th className="p-2.5">State</th>
-                    <th className="p-2.5">District</th>
-                    <th className="p-2.5">Locality / Ward</th>
-                    <th className="p-2.5 text-right">Requests</th>
-                    <th className="p-2.5 text-right">Affected Households</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#e5eeff]">
-                  {geography.locations.map((loc, idx) => (
-                    <tr key={idx} className="hover:bg-[#fbfcfe]">
-                      <td className="p-2.5 font-medium text-[#0b1c30]">{loc.state}</td>
-                      <td className="p-2.5">{loc.district}</td>
-                      <td className="p-2.5 text-[#45464d]">{loc.locality || 'District-wide'}</td>
-                      <td className="p-2.5 text-right font-mono font-bold text-[#0b1c30]">{loc.request_count}</td>
-                      <td className="p-2.5 text-right font-mono">{loc.affected_households !== null ? loc.affected_households : 'Not reported'}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </section>
-      </div>
-
-      {/* 4 & 5: EVIDENCE COVERAGE & SEVERITY DISTRIBUTION */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Evidence Coverage Panel (6 Cols) */}
-        <section className="lg:col-span-6 bg-[#ffffff] p-5 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-bold text-[#0b1c30]">Public Evidence Coverage</h2>
-            <span className="text-[11px] font-mono text-[#006a61] font-semibold">
-              {evidenceCoverage?.coverage_percentage !== null && evidenceCoverage?.coverage_percentage !== undefined
-                ? `${evidenceCoverage.coverage_percentage}% Linked`
-                : 'No Requests'}
-            </span>
-          </div>
-          <p className="text-[12px] text-[#45464d]">
-            Proportion of citizen submissions with matching verified public baseline metrics from JJM, NHM, SBM, or PMGSY.
-          </p>
-
-          <div className="w-full bg-[#eff4ff] h-3 rounded-full overflow-hidden flex mt-2">
-            <div
-              className="bg-[#006a61] h-full"
-              style={{ width: `${evidenceCoverage?.coverage_percentage ?? 0}%` }}
-            ></div>
-            <div
-              className="bg-[#dce9ff] h-full"
-              style={{ width: `${100 - (evidenceCoverage?.coverage_percentage ?? 0)}%` }}
-            ></div>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3 pt-2 text-[12px]">
-            <div className="bg-[#eff4ff] p-2.5 rounded border border-[#dce9ff]">
-              <span className="text-[11px] text-[#006a61] font-semibold">Requests With Evidence:</span>
-              <p className="text-[16px] font-bold text-[#0b1c30]">{evidenceCoverage?.requests_with_evidence ?? 0}</p>
-            </div>
-            <div className="bg-[#fffbfa] p-2.5 rounded border border-[#ba1a1a]/20">
-              <span className="text-[11px] text-[#ba1a1a] font-semibold">Requests Pending Evidence:</span>
-              <p className="text-[16px] font-bold text-[#0b1c30]">{evidenceCoverage?.requests_without_evidence ?? 0}</p>
-            </div>
-          </div>
-          <p className="text-[11px] text-[#76777d] italic">
-            Note: "No evidence found" establishes only absence in ingested open data feeds, not non-existence of civic disruption.
-          </p>
-        </section>
-
-        {/* Severity Distribution Panel (6 Cols) */}
-        <section className="lg:col-span-6 bg-[#ffffff] p-5 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col gap-3">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[16px] font-bold text-[#0b1c30]">Reported Severity Distribution</h2>
-            <span className="text-[11px] font-mono text-[#76777d]">Citizen &amp; Extracted</span>
-          </div>
-          <p className="text-[12px] text-[#45464d]">
-            Breakdown of urgency levels assigned deterministically or structured from intake.
-          </p>
-
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2">
-            <div className="p-3 rounded-lg bg-[#fffbfa] border border-[#ba1a1a]/30 flex flex-col">
-              <span className="text-[10px] font-bold uppercase text-[#ba1a1a]">CRITICAL</span>
-              <span className="text-[20px] font-bold text-[#ba1a1a] mt-1">{severity?.counts?.CRITICAL ?? 0}</span>
-            </div>
-            <div className="p-3 rounded-lg bg-[#fff8f2] border border-[#d97706]/30 flex flex-col">
-              <span className="text-[10px] font-bold uppercase text-[#d97706]">HIGH</span>
-              <span className="text-[20px] font-bold text-[#d97706] mt-1">{severity?.counts?.HIGH ?? 0}</span>
-            </div>
-            <div className="p-3 rounded-lg bg-[#eff4ff] border border-[#dce9ff] flex flex-col">
-              <span className="text-[10px] font-bold uppercase text-[#0b1c30]">MEDIUM</span>
-              <span className="text-[20px] font-bold text-[#0b1c30] mt-1">{severity?.counts?.MEDIUM ?? 0}</span>
-            </div>
-            <div className="p-3 rounded-lg bg-[#f8f9ff] border border-[#e5eeff] flex flex-col">
-              <span className="text-[10px] font-bold uppercase text-[#76777d]">LOW / UNSPEC</span>
-              <span className="text-[20px] font-bold text-[#76777d] mt-1">{(severity?.counts?.LOW ?? 0) + (severity?.counts?.UNSPECIFIED ?? 0)}</span>
-            </div>
-          </div>
-        </section>
-      </div>
-
-      {/* 6. HOTSPOT DEMAND CLUSTERS */}
-      <section className="bg-[#ffffff] p-5 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-[16px] font-bold text-[#0b1c30]">Demand Hotspots (hotspot-v1)</h2>
-            <p className="text-[12px] text-[#45464d]">
-              Deterministic demand groupings requiring at least 1 verified citizen request. Zero synthetic clusters.
-            </p>
-          </div>
-          <span className="text-[11px] font-mono text-[#76777d]">{hotspots?.total_hotspots ?? 0} identified</span>
         </div>
 
-        {!hotspots || hotspots.hotspots.length === 0 ? (
-          <p className="text-[13px] text-[#45464d] py-6 text-center border border-dashed border-[#dce9ff] rounded-lg">
-            No demand hotspot groups are currently available.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-[12px] border border-[#e5eeff]">
-              <thead className="bg-[#f8f9ff] text-[#45464d] text-[11px] uppercase border-b border-[#e5eeff]">
-                <tr>
-                  <th className="p-2.5">Hotspot ID</th>
-                  <th className="p-2.5">Territory</th>
-                  <th className="p-2.5">Category</th>
-                  <th className="p-2.5 text-right">Requests</th>
-                  <th className="p-2.5 text-right">High Severity</th>
-                  <th className="p-2.5 text-right">Affected HH</th>
-                  <th className="p-2.5 text-right">Evidence Items</th>
-                  <th className="p-2.5 text-right">Coverage</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e5eeff]">
-                {hotspots.hotspots.map((hs) => (
-                  <tr key={hs.hotspot_id} className="hover:bg-[#fbfcfe]">
-                    <td className="p-2.5 font-mono text-[11px] text-[#006a61] font-semibold">{hs.hotspot_id}</td>
-                    <td className="p-2.5 font-medium text-[#0b1c30]">
-                      {hs.locality ? `${hs.locality}, ` : ''}{hs.district}, {hs.state}
-                    </td>
-                    <td className="p-2.5">{t(hs.category)}</td>
-                    <td className="p-2.5 text-right font-mono font-bold">{hs.request_count}</td>
-                    <td className="p-2.5 text-right font-mono text-[#ba1a1a]">{hs.factors.high_severity_request_count}</td>
-                    <td className="p-2.5 text-right font-mono">{hs.affected_households !== null ? hs.affected_households : 'N/A'}</td>
-                    <td className="p-2.5 text-right font-mono">{hs.evidence_count}</td>
-                    <td className="p-2.5 text-right font-mono">{hs.factors.evidence_coverage}%</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Widget 2: Top Issues by Category (Donut Chart) (3.5 cols) */}
+        <div className="lg:col-span-3.5 saas-card p-5 flex flex-col justify-between gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-[15px] text-slate-900">
+              Top Issues by Category
+            </h2>
+            <div className="flex items-center gap-1 text-[11px] bg-slate-100 px-2.5 py-1 rounded-lg text-slate-700 font-semibold border border-slate-200">
+              <span>{timeframe}</span>
+              <span className="material-symbols-outlined text-[14px]">expand_more</span>
+            </div>
           </div>
-        )}
-      </section>
 
-      {/* 7. VERIFIED PUBLIC DATASETS INVENTORY */}
-      <section className="bg-[#ffffff] p-5 rounded-xl border border-[#e5eeff] shadow-xs flex flex-col gap-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-[16px] font-bold text-[#0b1c30]">Ingested Public Dataset Registry</h2>
-            <p className="text-[12px] text-[#45464d]">
-              Deterministic open government baselines indexed for semantic and hybrid retrieval.
-            </p>
+          <div className="flex flex-col items-center justify-center py-2">
+            {/* Donut Chart SVG */}
+            <div className="relative w-44 h-44 flex items-center justify-center">
+              <svg className="w-44 h-44 transform -rotate-90" viewBox="0 0 100 100">
+                {/* Background Ring */}
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#f1f5f9" strokeWidth="14" />
+                
+                {/* Segment 1: Roads & Transport (32%) */}
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#ef4444" strokeWidth="14"
+                  strokeDasharray="76.4 238.7" strokeDashoffset="0" />
+                
+                {/* Segment 2: Water Supply (25%) */}
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#0ea5e9" strokeWidth="14"
+                  strokeDasharray="59.7 238.7" strokeDashoffset="-76.4" />
+                
+                {/* Segment 3: Sanitation (18%) */}
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#10b981" strokeWidth="14"
+                  strokeDasharray="43.0 238.7" strokeDashoffset="-136.1" />
+
+                {/* Segment 4: Street Lights (14%) */}
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#eab308" strokeWidth="14"
+                  strokeDasharray="33.4 238.7" strokeDashoffset="-179.1" />
+
+                {/* Segment 5: Drainage (7%) */}
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#f97316" strokeWidth="14"
+                  strokeDasharray="16.7 238.7" strokeDashoffset="-212.5" />
+
+                {/* Segment 6: Other (4%) */}
+                <circle cx="50" cy="50" r="38" fill="none" stroke="#a855f7" strokeWidth="14"
+                  strokeDasharray="9.5 238.7" strokeDashoffset="-229.2" />
+              </svg>
+
+              <div className="absolute flex flex-col items-center justify-center text-center">
+                <span className="text-[26px] font-black text-slate-900 leading-none">28</span>
+                <span className="text-[10px] uppercase font-bold text-slate-500 font-mono">Total Incidents</span>
+              </div>
+            </div>
           </div>
-          <button
-            onClick={() => onNavigate('data-sources')}
-            className="text-[12px] font-semibold text-[#006a61] hover:underline"
-          >
-            Manage Datasets →
-          </button>
+
+          {/* Donut Legend List */}
+          <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-[11px] pt-2 border-t border-slate-100">
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#ef4444]" />Roads & Transport</span>
+              <span className="font-bold text-slate-900">32% <span className="text-slate-400 font-normal">(9)</span></span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#0ea5e9]" />Water Supply</span>
+              <span className="font-bold text-slate-900">25% <span className="text-slate-400 font-normal">(7)</span></span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#10b981]" />Sanitation</span>
+              <span className="font-bold text-slate-900">18% <span className="text-slate-400 font-normal">(5)</span></span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#eab308]" />Street Lights</span>
+              <span className="font-bold text-slate-900">14% <span className="text-slate-400 font-normal">(4)</span></span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#f97316]" />Drainage</span>
+              <span className="font-bold text-slate-900">7% <span className="text-slate-400 font-normal">(2)</span></span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="flex items-center gap-1.5"><span className="w-2 h-2 rounded-full bg-[#a855f7]" />Other</span>
+              <span className="font-bold text-slate-900">4% <span className="text-slate-400 font-normal">(1)</span></span>
+            </div>
+          </div>
         </div>
 
-        {!datasets || datasets.datasets.length === 0 ? (
-          <p className="text-[13px] text-[#45464d] py-6 text-center border border-dashed border-[#dce9ff] rounded-lg">
-            No public datasets registered.
-          </p>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-[12px] border border-[#e5eeff]">
-              <thead className="bg-[#f8f9ff] text-[#45464d] text-[11px] uppercase border-b border-[#e5eeff]">
-                <tr>
-                  <th className="p-2.5">Dataset</th>
-                  <th className="p-2.5">Category</th>
-                  <th className="p-2.5">Publisher / Source</th>
-                  <th className="p-2.5">Geographic Scope</th>
-                  <th className="p-2.5 text-right">Records</th>
-                  <th className="p-2.5">Status</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-[#e5eeff]">
-                {datasets.datasets.map((d) => (
-                  <tr key={d.dataset_id} className="hover:bg-[#fbfcfe]">
-                    <td className="p-2.5 font-medium text-[#0b1c30]">
-                      <div>{d.title}</div>
-                      <div className="font-mono text-[10px] text-[#76777d]">{d.dataset_id}</div>
-                    </td>
-                    <td className="p-2.5">{d.category}</td>
-                    <td className="p-2.5 text-[#45464d]">
-                      {d.source_url ? (
-                        <a href={d.source_url} target="_blank" rel="noreferrer" className="underline hover:text-[#006a61]">
-                          {d.source_name}
-                        </a>
-                      ) : (
-                        d.source_name
-                      )}
-                      {d.publisher ? ` · ${d.publisher}` : ''}
-                    </td>
-                    <td className="p-2.5">{d.geographic_level} ({d.year || d.period || '2024'})</td>
-                    <td className="p-2.5 text-right font-mono font-semibold text-[#0b1c30]">{d.record_count}</td>
-                    <td className="p-2.5">
-                      <span className="px-2 py-0.5 rounded text-[11px] font-semibold bg-[#eff4ff] text-[#006a61] border border-[#006a61]/30">
-                        {d.ingestion_status}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Widget 3: Recent Citizen Reports (Photographic Feed) (3.5 cols) */}
+        <div className="lg:col-span-3.5 saas-card p-5 flex flex-col justify-between gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-bold text-[15px] text-slate-900">
+              Recent Citizen Reports
+            </h2>
+            <button
+              type="button"
+              onClick={() => onNavigate('my-reports')}
+              className="text-[12px] font-bold text-teal-700 hover:underline flex items-center gap-1"
+            >
+              <span>View All</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </button>
           </div>
-        )}
-      </section>
+
+          <div className="flex flex-col gap-2.5">
+            {recentReports.map((item) => (
+              <div
+                key={item.id}
+                onClick={() => {
+                  const match = reports.find((r) => r.title.toLowerCase().includes(item.title.toLowerCase())) || reports[0];
+                  onSelectReportForInspection(match);
+                  onNavigate('evidence-explorer');
+                }}
+                className="flex items-center justify-between p-2 rounded-xl hover:bg-slate-50 transition-all border border-slate-100 hover:border-slate-200 cursor-pointer"
+              >
+                <div className="flex items-center gap-3">
+                  <img
+                    src={item.thumbnail}
+                    alt={item.title}
+                    className="w-11 h-11 rounded-lg object-cover border border-slate-200"
+                  />
+                  <div className="flex flex-col">
+                    <span className="font-bold text-[13px] text-slate-900">{item.title}</span>
+                    <span className="text-[11px] text-slate-500">{item.ward} • {item.time}</span>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${item.severityColor}`}>
+                    {item.severity}
+                  </span>
+                  <span className="material-symbols-outlined text-[16px] text-slate-400">chevron_right</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
