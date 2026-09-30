@@ -29,27 +29,97 @@ Public data is never presented as citizen submissions, and AI inferences are nev
 
 ---
 
-## 3. Retrieval vs RAG Architecture
+## 3. End-to-End System Architecture
 
 ```
-[ RETRIEVAL FLOW ]
+                                  ┌─────────────────────────────────────────┐
+                                  │      Citizen / Institutional User       │
+                                  └────────────────────┬────────────────────┘
+                                                       │
+                                            HTTPS / REST API Requests
+                                                       │
+                                                       ▼
+┌──────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│                                             FastAPI Backend Layer                                                │
+│                                                                                                                  │
+│  ┌───────────────────────┐   ┌────────────────────────┐   ┌───────────────────────┐   ┌───────────────────────┐  │
+│  │   Citizen Request     │   │   Knowledge Retrieval  │   │  Public Data Engine   │   │  Grounded RAG Engine  │  │
+│  │   Processing Routes   │   │   & Semantic Service   │   │  & Provenance Loader  │   │  (Gemini 2.5 SDK)     │  │
+│  └───────────┬───────────┘   └───────────┬────────────┘   └───────────┬───────────┘   └───────────┬───────────┘  │
+└──────────────┼───────────────────────────┼────────────────────────────┼───────────────────────────┼──────────────┘
+               │                           │                            │                           │
+               ▼                           ▼                            ▼                           ▼
+ ┌───────────────────────────┐ ┌───────────────────────────┐ ┌───────────────────────┐ ┌─────────────────────────┐
+ │   SQLite Primary Store    │ │  SentenceTransformers    │ │ OGD India (data.gov)  │ │ Google Gemini 2.5 Flash │
+ │  (`nagriklens.db` / ORM)  │ │  FAISS Vector Index       │ │ Verified Government   │ │ Grounded Synthesis &    │
+ │  - requests, evidence,    │ │  (paraphrase-multilingual │ │ Datasets & Benchmarks │ │ Citation Guardrails     │
+ │    analyses, datasets     │ │   MiniLM-L12-v2 embeddings│ │ (Jal Jeevan Mission)  │ │ (Anti-Injection Context)│
+ └───────────────────────────┘ └───────────────────────────┘ └───────────────────────┘ └─────────────────────────┘
+```
+
+### Retrieval & Grounding Workflow
+```
+[ 1. RETRIEVAL FLOW ]
 Citizen Request (Text + Location + Category)
       ↓
-Query Builder (Natural Language Query)
+Query Builder (Deterministic Query Formulation)
       ↓
-Hybrid Retriever (Metadata Match Level + FAISS Vector Similarity)
+Hybrid Retriever (Metadata Match Level + Multilingual FAISS Cosine Similarity)
       ↓
-Verified Public Evidence (KnowledgeEvidence)
+Ranked Verified Public Evidence (KnowledgeEvidence records with IDs)
 
-[ RAG / GROUNDED ANALYSIS FLOW ]
-Structured Request + Verified Public Evidence
+[ 2. RAG / GROUNDED ANALYSIS FLOW ]
+Structured Request Parameters + Verified Public Evidence
       ↓
-Context Builder (Prompt Injection Protection + Evidence Formatting)
+Context Builder (Isolated User-Data Block + Prompt Injection Defenses)
       ↓
-Gemini 2.5 Flash / Pro
+Google Gemini 2.5 Flash / Pro API
       ↓
-Structured Grounded Analysis (Summary, Observations with Evidence IDs, Gaps, Sources, Limitations)
+Structured Grounded Analysis (Summary, Observations with Evidence ID Citations, Gaps, Data Limitations)
 ```
+
+---
+
+## 4. Repository Structure
+
+```
+jan-setu-ai/
+├── backend/
+│   ├── app/                     # Core application configs & dependencies
+│   ├── knowledge/               # Hybrid & Semantic Retrieval Services
+│   │   ├── hybrid_retriever.py  # Deterministic + Vector ranking logic
+│   │   ├── retriever.py         # Metadata-based filtering
+│   │   ├── vector_index.py      # FAISS vector similarity indexing
+│   │   └── embedding_service.py # Multilingual SentenceTransformer embeddings
+│   ├── public_data/             # OGD Data Ingestion & Normalization
+│   │   ├── loaders.py           # CSV/JSON provenance loaders
+│   │   ├── normalizer.py        # Standardized schema normalizer
+│   │   └── repository.py        # Public metric queries
+│   ├── rag/                     # Grounded Analysis & Gemini RAG
+│   │   ├── context_builder.py   # Anti-injection prompt formatting
+│   │   └── service.py           # Gemini 2.5 synthesis with citations
+│   ├── routes/                  # API Route Controllers
+│   ├── gemini_service.py        # Gemini parameter extraction service
+│   ├── models.py                # SQLAlchemy ORM models
+│   ├── schemas.py               # Pydantic validation schemas
+│   └── main.py                  # FastAPI Application Entrypoint
+├── frontend/
+│   ├── src/
+│   │   ├── api/                 # Backend API client integration
+│   │   ├── components/          # Reusable civic UI components & widgets
+│   │   ├── pages/               # Platform views (Intake, Tracking, Dashboard)
+│   │   ├── i18n.tsx             # Multilingual localization context (EN, HI, GU, etc.)
+│   │   └── types.ts             # TypeScript interface definitions
+│   ├── package.json             # Frontend dependencies (React 19, Vite, Tailwind)
+│   └── vite.config.ts           # Vite build & proxy configuration
+├── data/
+│   ├── raw/                     # Verified open government dataset baselines (JJM)
+│   └── vector/                  # Persisted FAISS vector indices & metadata
+├── docs/                        # Architecture and design specifications
+├── tests/                       # Deterministic Pytest verification test suite
+└── README.md                    # Project documentation
+```
+
 
 ---
 
