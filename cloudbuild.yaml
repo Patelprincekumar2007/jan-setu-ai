@@ -1,0 +1,47 @@
+# ==============================================================================
+# NagrikLens AI: Google Cloud Build Configuration (Phase 3K Preparation)
+# ==============================================================================
+# Builds and pushes container images for backend and frontend services.
+# Deployment to Cloud Run will take place in Phase 3N.
+# ==============================================================================
+
+steps:
+  # Step 1: Build Backend Container Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/nagriklens-backend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/nagriklens-backend:latest'
+      - '-f'
+      - 'backend/Dockerfile'
+      - '.'
+    id: 'build-backend'
+
+  # Step 2: Build Frontend Container Image
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/nagriklens-frontend:$COMMIT_SHA'
+      - '-t'
+      - 'gcr.io/$PROJECT_ID/nagriklens-frontend:latest'
+      - '--build-arg'
+      - 'VITE_API_BASE_URL=$_BACKEND_SERVICE_URL'
+      - '-f'
+      - 'frontend/Dockerfile'
+      - '.'
+    id: 'build-frontend'
+
+images:
+  - 'gcr.io/$PROJECT_ID/nagriklens-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/nagriklens-backend:latest'
+  - 'gcr.io/$PROJECT_ID/nagriklens-frontend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/nagriklens-frontend:latest'
+
+substitutions:
+  _BACKEND_SERVICE_URL: ''
+
+options:
+  logging: CLOUD_LOGGING_ONLY

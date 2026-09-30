@@ -1,0 +1,23 @@
+# ==============================================================================
+# NagrikLens AI: Backend Docker Ignore Rules
+# ==============================================================================
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+.venv/
+.env
+.env.*
+!.env.example
+.git
+.gitignore
+.pytest_cache
+.coverage
+htmlcov/
+*.log
+.DS_Store
+Thumbs.db
+tests/

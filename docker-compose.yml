@@ -1,0 +1,48 @@
+# ==============================================================================
+# NagrikLens AI: Local Production-Like Integration Compose File (Phase 3K)
+# ==============================================================================
+# Demonstrates container-to-container networking and environment mapping.
+# For standard local development, running `uvicorn` and `npm run dev` directly
+# remains the recommended workflow.
+# ==============================================================================
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: nagriklens-backend
+    ports:
+      - "8000:8080"
+    environment:
+      - PORT=8080
+      - HOST=0.0.0.0
+      - ENVIRONMENT=production
+      - FRONTEND_URL=http://localhost:3000
+      - DATABASE_URL=sqlite:///./nagriklens.db
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=gemini-2.5-flash
+      - LOG_LEVEL=INFO
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        - VITE_API_BASE_URL=http://localhost:8000
+    container_name: nagriklens-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
