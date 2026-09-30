@@ -253,11 +253,72 @@ pytest tests/ -v
 
 ---
 
-## 8. Known Limitations
+---
+
+## 8. Core Features & Capabilities
+
+- 🌐 **Multilingual Citizen Intake:** Supports conversational submission of local civic requests across multiple regional languages with automatic structured entity extraction via Google Gemini.
+- 🛡️ **Anti-Injection Grounded RAG:** Strict isolation of untrusted user narratives into dedicated data blocks with rigid system prompts preventing prompt injection and hallucinatory factual claims.
+- 📊 **Verified Open Data Ingestion:** Direct linkage to verified Open Government Data (OGD) datasets (e.g. Ministry of Jal Shakti / Jal Jeevan Mission) with complete row-level provenance.
+- 🔍 **Hybrid Deterministic + Semantic Retrieval:** 3-tier matching combining administrative metadata filters (`state`, `district`, `category`) with multilingual vector cosine similarity (`FAISS`).
+- 🏛️ **Institutional Decision Support:** Structured evidence-backed briefing sheets with verifiable citations (`evidence_id`), explicit gap identification, and confidence notices.
+
+---
+
+## 9. Security & Responsible AI Guardrails
+
+1. **Evidence Grounding Requirement:** Gemini models are explicitly instructed to only make assertions supported by retrieved `KnowledgeEvidence` records, citing exact evidence IDs for every observation.
+2. **Context Isolation:** Citizen-submitted text is wrapped inside isolated XML-style boundary blocks to mitigate prompt injection risks.
+3. **Data Provenance:** Every public statistic displayed links directly to official government dataset identifiers, publishers, and open license terms (GODL-India).
+4. **Non-Blocking Resilience:** Should external AI services or embeddings be temporarily unreachable, core request logging and data ingestion remain fully operational.
+
+---
+
+## 10. Contributing & Development Workflow
+
+Contributions to enhance NagrikLens AI are welcome! Please follow the workflow below:
+
+1. **Fork or Clone the Repository:**
+   ```bash
+   git clone https://github.com/Patelprincekumar2007/jan-setu-ai.git
+   ```
+2. **Create a Feature Branch:**
+   ```bash
+   git checkout -b feat/your-feature-name
+   ```
+3. **Make Changes and Verify Tests:**
+   ```bash
+   # Run Pytest test suite
+   pytest tests/ -v
+   # Check TypeScript types
+   cd frontend && npm run lint
+   ```
+4. **Commit using Conventional Commits:**
+   ```bash
+   git commit -m "feat(module): description of changes"
+   ```
+5. **Push and Open a Pull Request:**
+   ```bash
+   git push origin feat/your-feature-name
+   ```
+
+---
+
+## 11. Known Limitations
 
 1. **Current Public Data Coverage:** Currently includes 25 district baselines from Jal Jeevan Mission 2024.
 2. **Vector Index:** FAISS IndexFlatIP runs locally as a fast prototype vector index.
 3. **Similarity Scores:** Similarity score indicates semantic proximity, not real-world certainty or statistical confidence.
 4. **Missing Evidence:** Lack of public records does not imply a citizen problem does not exist; gaps are explicitly identified.
 5. **No Decision Automation:** Decision automation, priority scoring, hotspot detection, and automated dispatch are intentionally excluded from this phase.
+
+---
+
+## 12. Acknowledgements & Hackathon
+
+Built for **Build with AI: Code for Communities (Second Edition)** under **Track 1: AI for Digital Public Infrastructure & Governance**.
+
+- **GitHub Contributors:** [@Patelprincekumar2007](https://github.com/Patelprincekumar2007), [@AbhishekChikhaliya](https://github.com/AbhishekChikhaliya)
+- **License:** Open Source under the MIT License.
+
 
