@@ -41,71 +41,118 @@ export const DataSourcesView: React.FC<DataSourcesViewProps> = ({ onShowToast })
   });
 
   return (
-    <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
-      <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
+    <div className="p-4 lg:p-6 max-w-[1600px] mx-auto w-full space-y-6 min-h-screen bg-[#f0f4f9] text-slate-900 pb-16 font-sans">
+      <header className="saas-card p-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">{t('Public data catalog')}</p>
-          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('Data sources')}</h1>
-          <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
-            {t('Dataset metadata currently stored by this prototype. Availability here does not imply a live upstream feed.')}
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 font-mono text-[11px] font-bold border border-teal-200">
+              {t('Public data catalog')}
+            </span>
+          </div>
+          <h1 className="text-[26px] font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-teal-700 text-[28px]">database</span>
+            {t('Data sources')}
+          </h1>
+          <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-slate-600">
+            {t('Dataset metadata currently stored by this prototype. Official open data records powering FAISS vector grounding and anti-hallucination verification.')}
           </p>
         </div>
         <button
           type="button"
           onClick={() => void reloadCatalog(true)}
           disabled={isReloading}
-          className="inline-flex items-center gap-2 self-start border border-[#006a61] px-4 py-2 text-[13px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:cursor-wait disabled:opacity-50 md:self-auto"
+          className="inline-flex items-center gap-2 self-start rounded-lg bg-[#00897b] hover:bg-[#00796b] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all disabled:cursor-wait disabled:opacity-50 md:self-auto cursor-pointer"
         >
           <span className={`material-symbols-outlined text-[18px] ${isReloading ? 'animate-spin' : ''}`}>refresh</span>
           <span>{isReloading ? t('Loading...') : t('Reload catalog')}</span>
         </button>
       </header>
 
-      <div className="flex flex-wrap gap-2" role="group" aria-label="Filter datasets by category">
+      <div className="saas-card p-4 flex flex-wrap gap-2" role="group" aria-label="Filter datasets by category">
         {categories.map((category) => (
           <button
             key={category}
             type="button"
             aria-pressed={filterCategory === category}
             onClick={() => setFilterCategory(category)}
-            className={`border px-3 py-1.5 text-[12px] font-semibold ${filterCategory === category ? 'border-[#006a61] bg-[#e7f5f1] text-[#005049]' : 'border-[#dce9ff] text-[#45464d] hover:bg-[#eff4ff]'}`}
+            className={`rounded-lg px-4 py-2 text-[12px] font-bold transition-all cursor-pointer ${
+              filterCategory === category
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
+            }`}
           >
             {t(category)}{category === 'All' ? ` (${datasets.length})` : ''}
           </button>
         ))}
       </div>
 
-      {isLoading && <p className="text-[13px] text-[#45464d]">{t('Loading stored datasets...')}</p>}
-      {error && <p role="alert" className="border-l-2 border-[#ba1a1a] pl-3 text-[13px] text-[#93000a]">{error}</p>}
+      {isLoading && (
+        <div className="text-center py-12 text-slate-500 text-[13px]">
+          <span className="material-symbols-outlined text-[32px] text-teal-700 animate-spin mb-2">refresh</span>
+          <p>{t('Loading stored datasets...')}</p>
+        </div>
+      )}
+      {error && <p role="alert" className="border-l-4 border-rose-500 pl-3 text-[13px] text-rose-800 bg-rose-50 p-3 rounded-r-lg">{error}</p>}
       {!isLoading && !error && datasets.length === 0 && (
-        <p className="border-y border-[#dce9ff] py-5 text-[13px] text-[#45464d]">{t('No datasets are currently registered.')}</p>
+        <p className="saas-card p-6 text-center text-[13px] text-slate-500">{t('No datasets are currently registered.')}</p>
       )}
 
-      <section className="grid grid-cols-1 gap-x-8 md:grid-cols-2" aria-label="Registered datasets">
+      <section className="grid grid-cols-1 gap-5 md:grid-cols-2" aria-label="Registered datasets">
         {filtered.map((dataset) => (
-          <article key={dataset.dataset_id} className="space-y-3 border-y border-[#dce9ff] py-4">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-mono text-[11px] text-[#006a61]">{dataset.dataset_id}</p>
-                <h2 className="mt-1 text-[15px] font-semibold text-[#0b1c30]">{dataset.title}</h2>
+          <article key={dataset.dataset_id} className="saas-card p-5 space-y-3.5 hover:border-slate-300 transition-all flex flex-col justify-between">
+            <div className="space-y-2.5">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <span className="font-mono text-[11px] text-teal-700 font-bold">{dataset.dataset_id}</span>
+                  <h2 className="mt-1 text-[16px] font-bold text-slate-900">{dataset.title}</h2>
+                </div>
+                <span className="rounded-full bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 font-mono text-[10px] font-bold text-emerald-800">
+                  {dataset.ingestion_status}
+                </span>
               </div>
-              <span className="border border-[#dce9ff] px-2 py-1 font-mono text-[10px] text-[#45464d]">
-                {dataset.ingestion_status}
-              </span>
+              <p className="text-[12px] text-slate-500 font-mono">
+                {dataset.publisher || dataset.source_name} • <span className="text-slate-900 font-sans font-semibold">{dataset.category}</span>
+              </p>
+              {dataset.description && (
+                <p className="text-[13px] leading-relaxed text-slate-700 bg-slate-50 p-3 rounded-xl border border-slate-200">
+                  {dataset.description}
+                </p>
+              )}
             </div>
-            <p className="text-[12px] text-[#45464d]">{dataset.publisher || dataset.source_name} · {dataset.category}</p>
-            {dataset.description && <p className="text-[13px] leading-relaxed text-[#45464d]">{dataset.description}</p>}
-            <dl className="grid grid-cols-2 gap-3 border-t border-[#eff4ff] pt-3 text-[11px]">
-              <div><dt className="text-[#76777d]">Records</dt><dd className="font-mono text-[#0b1c30]">{dataset.record_count.toLocaleString()}</dd></div>
-              <div><dt className="text-[#76777d]">Geographic level</dt><dd className="text-[#0b1c30]">{dataset.geographic_level}</dd></div>
-              <div><dt className="text-[#76777d]">Geographic scope</dt><dd className="text-[#0b1c30]">{dataset.geographic_scope || 'National'}</dd></div>
-              <div><dt className="text-[#76777d]">Reporting period</dt><dd className="text-[#0b1c30]">{dataset.period || dataset.year || '2024'}</dd></div>
-            </dl>
-            {dataset.source_url && (
-              <a href={dataset.source_url} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-[12px] font-semibold text-[#005049] underline">
-                <span>{t('Open source')}</span><span className="material-symbols-outlined text-[14px]">open_in_new</span>
-              </a>
-            )}
+
+            <div className="space-y-3 pt-2">
+              <dl className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 text-[11px]">
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <dt className="text-slate-500">Records</dt>
+                  <dd className="font-mono text-slate-900 font-bold text-[13px]">{dataset.record_count.toLocaleString()}</dd>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <dt className="text-slate-500">Geographic level</dt>
+                  <dd className="text-slate-900 font-semibold">{dataset.geographic_level}</dd>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <dt className="text-slate-500">Geographic scope</dt>
+                  <dd className="text-slate-900 font-semibold">{dataset.geographic_scope || 'National'}</dd>
+                </div>
+                <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200">
+                  <dt className="text-slate-500">Reporting period</dt>
+                  <dd className="text-slate-900 font-semibold">{dataset.period || dataset.year || '2024'}</dd>
+                </div>
+              </dl>
+              {dataset.source_url && (
+                <div className="flex justify-end pt-1">
+                  <a
+                    href={dataset.source_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center gap-1.5 text-[12px] font-bold text-teal-700 hover:underline"
+                  >
+                    <span>{t('Open source')}</span>
+                    <span className="material-symbols-outlined text-[14px]">open_in_new</span>
+                  </a>
+                </div>
+              )}
+            </div>
           </article>
         ))}
       </section>

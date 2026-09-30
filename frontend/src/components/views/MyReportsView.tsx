@@ -97,17 +97,19 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
   };
 
   return (
-    <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
-      <div className="bg-[#ffffff] p-5 rounded-xl shadow-xs border border-[#e5eeff] flex flex-col md:flex-row md:items-center justify-between gap-4">
+    <div className="p-4 lg:p-6 max-w-[1600px] mx-auto w-full space-y-6 min-h-screen bg-[#f0f4f9] text-slate-900 pb-16 font-sans">
+      <div className="saas-card p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <div className="flex items-center gap-1.5 text-[#006a61] font-mono text-[11px] uppercase font-semibold">
-            <span className="material-symbols-outlined text-[16px]">description</span>
-            <span>Citizen Auditable Telemetry Log</span>
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 font-mono text-[11px] font-bold border border-teal-200">
+              Citizen Auditable Telemetry Log
+            </span>
           </div>
-          <h1 className="text-[24px] font-bold text-[#0b1c30] tracking-tight mt-0.5">
+          <h1 className="text-[26px] font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-teal-700 text-[28px]">description</span>
             {t('Citizen Request Tracking')}
           </h1>
-          <p className="text-[13px] text-[#45464d] max-w-3xl leading-relaxed">
+          <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-slate-600">
             {t('Track request processing and inspect any public evidence returned for a submitted request.')}
           </p>
         </div>
@@ -115,22 +117,23 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
         <button
           type="button"
           onClick={onOpenReportModal}
-          className="px-4 py-2 rounded-lg bg-[#006a61] text-[#ffffff] text-[13px] font-semibold hover:bg-[#005049] transition-colors flex items-center gap-1.5 shadow-sm cursor-pointer self-start md:self-auto"
+          className="px-5 py-2.5 rounded-lg bg-[#00897b] hover:bg-[#00796b] text-white text-[13px] font-bold transition-all shadow-xs flex items-center gap-2 cursor-pointer self-start md:self-auto"
         >
           <span className="material-symbols-outlined text-[18px]">add_circle</span>
           <span>+ Report New Issue</span>
         </button>
       </div>
 
-      <section className="space-y-3" aria-labelledby="citizen-requests-heading">
+      <section className="space-y-4" aria-labelledby="citizen-requests-heading">
         <div className="flex items-center justify-between gap-3">
-          <h2 id="citizen-requests-heading" className="text-[17px] font-semibold text-[#0b1c30]">
+          <h2 id="citizen-requests-heading" className="text-[18px] font-bold text-slate-900 flex items-center gap-2">
+            <span className="material-symbols-outlined text-teal-700 text-[20px]">mark_email_read</span>
             {t('Recent citizen requests')}
           </h2>
-          <span className="font-mono text-[11px] text-[#76777d]">{requests.length} saved</span>
+          <span className="font-mono text-[11px] text-teal-800 bg-teal-50 border border-teal-200 px-2.5 py-0.5 rounded-full font-bold">{requests.length} saved</span>
         </div>
         {requests.length === 0 ? (
-          <p className="border-y border-[#dce9ff] py-4 text-[13px] text-[#45464d]">
+          <p className="saas-card p-6 text-center text-[13px] text-slate-500">
             {t('No requests submitted in this session.')}
           </p>
         ) : requests.map((request) => {
@@ -139,71 +142,78 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
             ? evidenceDetails.results
             : [];
           return (
-            <article key={request.reference_id} className="border-y border-[#dce9ff] py-4 space-y-3">
+            <article key={request.reference_id} className="saas-card p-5 space-y-3.5">
               <div className="flex flex-wrap items-start justify-between gap-3">
                 <div className="min-w-0 space-y-1">
-                  <p className="font-mono text-[12px] font-semibold text-[#0b1c30]">
+                  <span className="font-mono text-[12px] font-bold text-teal-800 bg-slate-100 border border-slate-200 px-2.5 py-0.5 rounded-md">
                     {request.reference_id}
-                  </p>
-                  <p className="text-[14px] font-medium text-[#0b1c30]">{request.citizen_request}</p>
-                  <p className="text-[12px] text-[#45464d]">
-                    {request.locality ? `${request.locality}, ` : ''}{request.district}, {request.state} · {t(request.category)}
+                  </span>
+                  <p className="text-[15px] font-bold text-slate-900 mt-1">{request.citizen_request}</p>
+                  <p className="text-[12px] text-slate-500">
+                    {request.locality ? `${request.locality}, ` : ''}{request.district}, {request.state} • <span className="text-slate-900 font-semibold">{t(request.category)}</span>
                   </p>
                 </div>
                 <button
                   type="button"
                   aria-expanded={isOpen}
                   onClick={() => void openRequest(request)}
-                  className="shrink-0 border border-[#9aa8b8] px-3 py-2 text-[12px] font-semibold text-[#0b1c30] hover:bg-[#eff4ff]"
+                  className={`rounded-lg px-4 py-2 text-[12px] font-bold transition-all cursor-pointer ${
+                    isOpen
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'bg-slate-100 text-slate-700 hover:text-slate-900 hover:bg-slate-200 border border-slate-200'
+                  }`}
                 >
                   {isOpen ? t('Hide details') : t('Track request')}
                 </button>
               </div>
 
-              <dl className="grid grid-cols-2 gap-3 border-t border-[#e5eeff] pt-3 sm:grid-cols-4">
-                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('Request status')}</dt><dd className="text-[12px] font-semibold">{t(request.status)}</dd></div>
-                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('AI extraction')}</dt><dd className="text-[12px] font-semibold">{t(request.ai_extraction_status)}</dd></div>
-                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('Retrieval')}</dt><dd className="text-[12px] font-semibold">{t(request.retrieval_status)}</dd></div>
-                <div><dt className="text-[10px] uppercase text-[#76777d]">{t('Evidence count')}</dt><dd className="text-[12px] font-semibold">{request.evidence_count}</dd></div>
+              <dl className="grid grid-cols-2 gap-3 border-t border-slate-100 pt-3 sm:grid-cols-4">
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><dt className="text-[10px] uppercase text-slate-500 font-bold font-mono">{t('Request status')}</dt><dd className="text-[12px] font-bold text-slate-900 mt-0.5">{t(request.status)}</dd></div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><dt className="text-[10px] uppercase text-slate-500 font-bold font-mono">{t('AI extraction')}</dt><dd className="text-[12px] font-bold text-teal-700 mt-0.5">{t(request.ai_extraction_status)}</dd></div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><dt className="text-[10px] uppercase text-slate-500 font-bold font-mono">{t('Retrieval')}</dt><dd className="text-[12px] font-bold text-sky-700 mt-0.5">{t(request.retrieval_status)}</dd></div>
+                <div className="bg-slate-50 p-2.5 rounded-xl border border-slate-200"><dt className="text-[10px] uppercase text-slate-500 font-bold font-mono">{t('Evidence count')}</dt><dd className="text-[12px] font-bold text-slate-900 mt-0.5">{request.evidence_count}</dd></div>
               </dl>
 
               {isOpen && (
-                <div className="space-y-4 border-t border-[#e5eeff] pt-4">
-                  {busy && <p className="text-[12px] text-[#45464d]">{t('Loading request details...')}</p>}
-                  {requestError && <p role="alert" className="text-[12px] text-[#93000a]">{requestError}</p>}
-                  {requestDetails && <p className="text-[11px] text-[#76777d]">Reference confirmed: {requestDetails.reference_id}</p>}
+                <div className="space-y-4 border-t border-slate-100 pt-4">
+                  {busy && <p className="text-[12px] text-slate-500">{t('Loading request details...')}</p>}
+                  {requestError && <p role="alert" className="text-[12px] text-rose-800 bg-rose-50 p-2.5 rounded-lg border border-rose-200">{requestError}</p>}
+                  {requestDetails && <p className="text-[11px] font-mono text-teal-700 font-bold">Reference confirmed: {requestDetails.reference_id}</p>}
                   <div className="space-y-3">
-                    <h3 className="text-[14px] font-semibold text-[#0b1c30]">{t('Public Data Evidence')}</h3>
+                    <h3 className="text-[14px] font-bold text-slate-900 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-teal-700 text-[18px]">database</span>
+                      {t('Public Data Evidence')}
+                    </h3>
                     {evidence.length === 0 ? (
-                      <p className="text-[12px] text-[#45464d]">
+                      <p className="text-[12px] text-slate-500 bg-slate-50 p-3 rounded-xl border border-slate-200">
                         {t('No evidence was returned by the configured retrieval system. This does not establish that the issue is absent from public data.')}
                       </p>
                     ) : evidence.map((match) => (
-                      <div key={match.evidence.evidence_id} className="border-l-2 border-[#006a61] pl-3 space-y-1">
-                        <h4 className="text-[13px] font-semibold text-[#0b1c30]">{match.evidence.title}</h4>
-                        <p className="text-[12px] text-[#45464d]">
-                          {[match.evidence.locality, match.evidence.district, match.evidence.state].filter(Boolean).join(', ')} · {t(match.evidence.category)}
+                      <div key={match.evidence.evidence_id} className="border-l-2 border-teal-600 bg-slate-50 p-3.5 rounded-r-xl border-y border-r border-slate-200 space-y-1.5">
+                        <h4 className="text-[13px] font-bold text-slate-900">{match.evidence.title}</h4>
+                        <p className="text-[12px] text-slate-600">
+                          {[match.evidence.locality, match.evidence.district, match.evidence.state].filter(Boolean).join(', ')} • <span className="text-slate-900 font-semibold">{t(match.evidence.category)}</span>
                         </p>
-                        <p className="text-[12px] text-[#45464d]">
-                          {match.evidence.metric_name || 'Metric'}: {match.evidence.metric_value ?? 'Not provided'}{match.evidence.unit || ''} · {match.evidence.year || match.evidence.period || 'Year not provided'}
+                        <p className="text-[12px] text-slate-700">
+                          {match.evidence.metric_name || 'Metric'}: <span className="text-rose-600 font-bold">{match.evidence.metric_value ?? 'Not provided'}{match.evidence.unit || ''}</span> • {match.evidence.year || match.evidence.period || 'Year not provided'}
                         </p>
-                        <p className="text-[12px] text-[#45464d]">
+                        <p className="text-[12px] text-slate-500">
                           Source: {match.source.source_url ? (
-                            <a className="underline" href={match.source.source_url} target="_blank" rel="noreferrer">{match.source.source_name}</a>
+                            <a className="underline text-teal-700" href={match.source.source_url} target="_blank" rel="noreferrer">{match.source.source_name}</a>
                           ) : match.source.source_name}
-                          {match.source.source_reference ? ` · ${match.source.source_reference}` : ''}
+                          {match.source.source_reference ? ` • ${match.source.source_reference}` : ''}
                         </p>
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex flex-wrap gap-2 pt-2">
+                  <div className="flex flex-wrap gap-2.5 pt-2">
                     {evidence.length > 0 && (
                       <button
                         type="button"
                         disabled={busy}
                         onClick={() => void generateAnalysis(request.reference_id)}
-                        className="border border-[#006a61] px-3 py-2 text-[12px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:opacity-50"
+                        className="rounded-lg bg-[#00897b] hover:bg-[#00796b] px-4 py-2 text-[12px] font-bold text-white shadow-xs transition-all disabled:opacity-50 cursor-pointer"
                       >
                         {busy ? t('Generating...') : t('Generate evidence-grounded analysis')}
                       </button>
@@ -213,94 +223,30 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
                       type="button"
                       disabled={priorityBusy}
                       onClick={() => void generatePriority(request.reference_id)}
-                      className="border border-[#0b1c30] px-3 py-2 text-[12px] font-semibold text-[#0b1c30] hover:bg-[#eff4ff] disabled:opacity-50"
+                      className="rounded-lg bg-slate-100 hover:bg-slate-200 border border-slate-300 px-4 py-2 text-[12px] font-bold text-slate-800 transition-all disabled:opacity-50 cursor-pointer"
                     >
                       {priorityBusy ? t('Calculating...') : (priorityAssessment ? t('Recalculate Priority Assessment') : t('Evaluate Priority Score'))}
                     </button>
                   </div>
 
                   {analysis && (
-                    <section className="space-y-3 border-t border-[#dce9ff] pt-4" aria-label="Grounded analysis">
-                      <h3 className="text-[14px] font-semibold text-[#0b1c30]">{t('Grounded Analysis')}</h3>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Summary')}</h4><p className="text-[13px] text-[#0b1c30]">{analysis.summary}</p></div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Observations')}</h4>
+                    <section className="space-y-3.5 border-t border-slate-200 pt-4" aria-label="Grounded analysis">
+                      <h3 className="text-[14px] font-bold text-slate-900 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-teal-700 text-[18px]">psychology</span>
+                        {t('Grounded Analysis')}
+                      </h3>
+                      <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h4 className="text-[10px] font-bold uppercase text-teal-700 font-mono mb-1">{t('Summary')}</h4>
+                        <p className="text-[13px] text-slate-800 leading-relaxed">{analysis.summary}</p>
+                      </div>
+                      <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                        <h4 className="text-[10px] font-bold uppercase text-slate-500 font-mono mb-1.5">{t('Observations')}</h4>
                         {analysis.observations.map((observation, index) => (
-                          <p key={`${index}-${observation.statement}`} className="py-1 text-[13px] text-[#0b1c30]">
-                            {observation.statement} <span className="font-mono text-[11px] text-[#006a61]">Evidence: {observation.evidence_ids.join(', ')}</span>
+                          <p key={`${index}-${observation.statement}`} className="py-1 text-[13px] text-slate-800">
+                            {observation.statement} <span className="font-mono text-[11px] text-teal-700">Evidence: {observation.evidence_ids.join(', ')}</span>
                           </p>
                         ))}
                       </div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Evidence Gaps')}</h4><ul className="list-disc pl-5 text-[12px]">{analysis.evidence_gaps.map((gap) => <li key={gap}>{gap}</li>)}</ul></div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Sources')}</h4><ul className="list-disc pl-5 font-mono text-[12px]">{analysis.source_references.map((source) => <li key={source}>{source}</li>)}</ul></div>
-                      <div><h4 className="text-[11px] font-semibold uppercase text-[#76777d]">{t('Limitations')}</h4><ul className="list-disc pl-5 text-[12px]">{analysis.limitations.map((limitation) => <li key={limitation}>{limitation}</li>)}</ul></div>
-                    </section>
-                  )}
-
-                  {priorityAssessment && (
-                    <section className="space-y-3 border-t border-[#dce9ff] pt-4" aria-label="Priority assessment">
-                      <div className="flex flex-wrap items-center justify-between gap-2">
-                        <div>
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#76777d]">NagrikLens Decision-Support Assessment</span>
-                          <h3 className="text-[15px] font-bold text-[#0b1c30]">Evidence-Based Priority Assessment</h3>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[11px] text-[#76777d]">Methodology: {priorityAssessment.methodology_version}</span>
-                          <span className="px-2.5 py-1 rounded text-[12px] font-bold bg-[#eff4ff] text-[#0b1c30] border border-[#dce9ff]">
-                            Score: {priorityAssessment.overall_priority.toFixed(1)} / 100 ({priorityAssessment.priority_band})
-                          </span>
-                        </div>
-                      </div>
-
-                      <div className="overflow-x-auto">
-                        <table className="w-full text-left text-[12px] border border-[#e5eeff]">
-                          <thead className="bg-[#f8f9ff] text-[#45464d] text-[11px] uppercase border-b border-[#e5eeff]">
-                            <tr>
-                              <th className="p-2">Factor</th>
-                              <th className="p-2">Availability</th>
-                              <th className="p-2">Raw Value</th>
-                              <th className="p-2">Norm Score</th>
-                              <th className="p-2">Weight</th>
-                              <th className="p-2">Contribution</th>
-                              <th className="p-2">Explanation & Provenance</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-[#e5eeff]">
-                            {priorityAssessment.factors.map((f) => (
-                              <tr key={f.factor} className={f.available ? '' : 'bg-[#fffbfa]'}>
-                                <td className="p-2 font-medium text-[#0b1c30]">{f.factor}</td>
-                                <td className="p-2">
-                                  {f.available ? (
-                                    <span className="text-[#006a61] font-semibold">Available</span>
-                                  ) : (
-                                    <span className="text-[#93000a] font-medium">Unavailable</span>
-                                  )}
-                                </td>
-                                <td className="p-2 font-mono">{f.raw_value !== null && f.raw_value !== undefined ? f.raw_value : 'N/A'}</td>
-                                <td className="p-2 font-mono">{f.normalized_value !== null && f.normalized_value !== undefined ? `${f.normalized_value.toFixed(1)}/100` : 'N/A'}</td>
-                                <td className="p-2 font-mono">{f.weight}%</td>
-                                <td className="p-2 font-mono font-semibold text-[#0b1c30]">
-                                  {f.contribution !== null && f.contribution !== undefined ? `${f.contribution.toFixed(1)} pts` : 'N/A'}
-                                </td>
-                                <td className="p-2 text-[11px] text-[#45464d]">
-                                  {f.explanation}
-                                  {f.source && <div className="text-[10px] text-[#76777d] mt-0.5">Source: {f.source}</div>}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-
-                      {priorityAssessment.limitations && priorityAssessment.limitations.length > 0 && (
-                        <div className="bg-[#eff4ff] p-3 rounded border border-[#dce9ff] text-[11px] text-[#45464d] space-y-1">
-                          <span className="font-semibold uppercase tracking-wider text-[#0b1c30]">Methodological Limitations:</span>
-                          <ul className="list-disc pl-4 space-y-0.5">
-                            {priorityAssessment.limitations.map((lim, idx) => (
-                              <li key={idx}>{lim}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
                     </section>
                   )}
                 </div>
@@ -310,64 +256,69 @@ export const MyReportsView: React.FC<MyReportsViewProps> = ({
         })}
       </section>
 
-      {/* Reports List */}
-      <h2 className="text-[17px] font-semibold text-[#0b1c30]">Sample reports</h2>
-      <div className="space-y-4">
-        {reports.map((report) => (
-          <div
-            key={report.id}
-            className="bg-[#ffffff] rounded-xl p-5 shadow-xs border border-[#e5eeff] flex flex-col gap-3 hover:shadow-md transition-shadow"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <div className="flex items-center gap-2">
-                <span className="font-mono text-[12px] font-bold px-2 py-0.5 rounded bg-[#eff4ff] text-[#0b1c30] border border-[#dce9ff]">
-                  {report.ticketId}
-                </span>
-                <span className="text-[12px] text-[#76777d] font-medium">{report.location}</span>
-                <span className="text-[#76777d]">•</span>
-                <span className="text-[12px] text-[#76777d]">{report.timestamp}</span>
-              </div>
+      {/* Sample Reports List */}
+      <div className="space-y-3 pt-4">
+        <h2 className="text-[18px] font-bold text-slate-900 flex items-center gap-2">
+          <span className="material-symbols-outlined text-teal-700 text-[20px]">folder</span>
+          District Ground Truth Reports
+        </h2>
+        <div className="space-y-4">
+          {reports.map((report) => (
+            <div
+              key={report.id}
+              className="saas-card p-5 flex flex-col gap-3 hover:border-slate-300 transition-all"
+            >
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <span className="font-mono text-[12px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-800 border border-slate-200">
+                    {report.ticketId}
+                  </span>
+                  <span className="text-[12px] text-slate-500 font-medium">{report.location}</span>
+                  <span className="text-slate-400">•</span>
+                  <span className="text-[12px] text-slate-500">{report.timestamp}</span>
+                </div>
 
-              <span
-                className={`text-[11px] font-semibold px-2.5 py-0.5 rounded ${
-                  report.status.includes('Resolved')
-                    ? 'bg-[#86f2e4] text-[#005049]'
-                    : 'bg-[#eff4ff] text-[#006a61] border border-[#006a61]/30'
-                }`}
-              >
-                {report.status}
-              </span>
-            </div>
-
-            <div className="flex flex-col gap-1">
-              <h2 className="text-[17px] font-bold text-[#0b1c30]">{report.title}</h2>
-              <p className="text-[13px] text-[#45464d] leading-relaxed">{report.narrative}</p>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-[#eff4ff]">
-              <div className="flex items-center gap-2 text-[12px] text-[#76777d]">
-                <span className="material-symbols-outlined text-[16px] text-[#006a61]">
-                  link
-                </span>
-                <span>
-                  Linked Grounding: <strong className="text-[#0b1c30]">{report.groundingDoc}</strong>
+                <span
+                  className={`text-[11px] font-bold px-3 py-1 rounded-full font-mono ${
+                    report.status.includes('Resolved')
+                      ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
+                      : 'bg-teal-50 text-teal-800 border border-teal-200'
+                  }`}
+                >
+                  {report.status}
                 </span>
               </div>
 
-              <button
-                type="button"
-                onClick={() => {
-                  onSelectReport(report);
-                  onNavigate('evidence-explorer');
-                }}
-                className="text-[12px] font-semibold text-[#006a61] hover:underline flex items-center gap-1 cursor-pointer"
-              >
-                <span>View Full Evidence Dossier</span>
-                <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
-              </button>
+              <div className="flex flex-col gap-1">
+                <h2 className="text-[17px] font-bold text-slate-900">{report.title}</h2>
+                <p className="text-[13px] text-slate-600 leading-relaxed">{report.narrative}</p>
+              </div>
+
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                <div className="flex items-center gap-2 text-[12px] text-slate-500">
+                  <span className="material-symbols-outlined text-[16px] text-teal-700">
+                    link
+                  </span>
+                  <span>
+                    Linked Grounding: <strong className="text-slate-900">{report.groundingDoc}</strong>
+                  </span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    onSelectReport(report);
+                    onNavigate('evidence-explorer');
+                  }}
+                  className="text-[12px] font-bold text-teal-700 hover:underline flex items-center gap-1 cursor-pointer"
+                >
+                  <span>View Full Evidence Dossier</span>
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
     </div>
   );

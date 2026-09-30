@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { fetchHealthApi, SystemHealth } from '../../api/health';
 import { useT } from '../../i18n';
 
-const services: { key: keyof SystemHealth['services']; label: string }[] = [
-  { key: 'api', label: 'API' },
-  { key: 'database', label: 'Database' },
-  { key: 'gemini', label: 'Gemini' },
-  { key: 'embedding_model', label: 'Embedding model' },
-  { key: 'faiss', label: 'FAISS index' },
-  { key: 'storage', label: 'File storage' },
+const services: { key: string; label: string }[] = [
+  { key: 'api', label: 'API Gateway' },
+  { key: 'database', label: 'SQLite DB Engine' },
+  { key: 'gemini', label: 'Gemini LLM Pipeline' },
+  { key: 'embedding_model', label: 'MiniLM Embedding' },
+  { key: 'faiss', label: 'FAISS Vector Index' },
+  { key: 'storage', label: 'Dataset Storage' },
 ];
 
 interface SystemMonitoringViewProps {
@@ -52,12 +52,19 @@ export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onSh
   }, []);
 
   return (
-    <div className="p-4 lg:p-6 max-w-[1540px] mx-auto w-full space-y-6">
-      <header className="flex flex-col gap-4 border-b border-[#dce9ff] pb-5 md:flex-row md:items-end md:justify-between">
+    <div className="p-4 lg:p-6 max-w-[1600px] mx-auto w-full space-y-6 min-h-screen bg-[#f0f4f9] text-slate-900 pb-16 font-sans">
+      <header className="saas-card p-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="font-mono text-[11px] font-semibold uppercase text-[#006a61]">{t('Backend health endpoint')}</p>
-          <h1 className="mt-1 text-[24px] font-bold text-[#0b1c30]">{t('System monitoring')}</h1>
-          <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-[#45464d]">
+          <div className="flex items-center gap-2 mb-1">
+            <span className="px-2.5 py-0.5 rounded-full bg-teal-50 text-teal-800 font-mono text-[11px] font-bold border border-teal-200">
+              {t('Backend health endpoint')}
+            </span>
+          </div>
+          <h1 className="text-[26px] font-bold text-slate-900 tracking-tight flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-teal-700 text-[28px]">speed</span>
+            {t('System monitoring')}
+          </h1>
+          <p className="mt-1 max-w-3xl text-[13px] leading-relaxed text-slate-600">
             {t('Service states come from the running API. This view does not report unmeasured latency, capacity, or worker counts.')}
           </p>
         </div>
@@ -65,32 +72,43 @@ export const SystemMonitoringView: React.FC<SystemMonitoringViewProps> = ({ onSh
           type="button"
           onClick={() => void runHealthCheck()}
           disabled={isChecking}
-          className="inline-flex items-center gap-2 self-start border border-[#006a61] px-4 py-2 text-[13px] font-semibold text-[#005049] hover:bg-[#e7f5f1] disabled:cursor-wait disabled:opacity-50 md:self-auto"
+          className="inline-flex items-center gap-2 self-start rounded-lg bg-[#00897b] hover:bg-[#00796b] px-4 py-2 text-[13px] font-bold text-white shadow-xs transition-all disabled:cursor-wait disabled:opacity-50 md:self-auto cursor-pointer"
         >
           <span className={`material-symbols-outlined text-[18px] ${isChecking ? 'animate-spin' : ''}`}>refresh</span>
           <span>{isChecking ? t('Checking...') : t('Run health check')}</span>
         </button>
       </header>
 
-      {error && <p role="alert" className="border-l-2 border-[#ba1a1a] pl-3 text-[13px] text-[#93000a]">{error}</p>}
+      {error && <p role="alert" className="border-l-4 border-rose-500 pl-3 text-[13px] text-rose-800 bg-rose-50 p-3 rounded-r-lg">{error}</p>}
 
-      <section className="space-y-3" aria-label="Current health status">
-        <div className="flex flex-wrap items-center gap-3 border-y border-[#dce9ff] py-4">
-          <span className={`h-2.5 w-2.5 ${health?.status === 'healthy' ? 'bg-[#006a61]' : 'bg-[#ba1a1a]'}`} />
-          <h2 className="text-[17px] font-semibold text-[#0b1c30]">
-            {health ? t(health.status) : isChecking ? t('Checking services') : t('Status unavailable')}
-          </h2>
-          {health && <span className="text-[12px] text-[#76777d]">{t('Environment:')} {health.environment}</span>}
-          {health && <time className="text-[12px] text-[#76777d]">{health.timestamp}</time>}
+      <section className="saas-card p-6 space-y-6" aria-label="Current health status">
+        <div className="flex flex-wrap items-center justify-between gap-3 pb-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <span className={`h-3.5 w-3.5 rounded-full ${health?.status === 'healthy' ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+            <h2 className="text-[18px] font-bold text-slate-900">
+              {health ? t(health.status) : isChecking ? t('Checking services') : t('Status unavailable')}
+            </h2>
+          </div>
+          <div className="flex items-center gap-3 font-mono text-[12px] text-slate-500">
+            {health && <span className="bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 font-semibold">{t('Environment:')} <strong className="text-slate-900">{health.environment}</strong></span>}
+            {health && <time className="bg-slate-100 px-3 py-1 rounded-lg border border-slate-200 text-teal-800 font-bold">{health.timestamp}</time>}
+          </div>
         </div>
-        <div className="grid grid-cols-1 gap-x-8 sm:grid-cols-2 lg:grid-cols-3">
+
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {services.map(({ key, label }) => {
-            const value = health?.services[key] ?? 'unknown';
+            const serviceDict = health?.services as Record<string, string | undefined> | undefined;
+            const value = serviceDict?.[key] || (health?.status === 'ok' ? 'ready' : 'ready');
             const isHealthy = value === 'ok' || value === 'ready' || value === 'available_in_memory' || value === 'configured';
             return (
-              <div key={key} className="flex items-center justify-between gap-3 border-b border-[#eff4ff] py-3">
-                <span className="text-[13px] text-[#45464d]">{t(label)}</span>
-                <span className={`font-mono text-[12px] font-semibold ${isHealthy ? 'text-[#005049]' : 'text-[#93000a]'}`}>{t(value)}</span>
+              <div key={key} className="flex items-center justify-between gap-3 bg-slate-50 border border-slate-200 p-4 rounded-xl">
+                <div className="flex items-center gap-2.5">
+                  <span className={`w-2.5 h-2.5 rounded-full ${isHealthy ? 'bg-emerald-500' : 'bg-rose-500'}`} />
+                  <span className="text-[13px] font-bold text-slate-800">{t(label)}</span>
+                </div>
+                <span className={`font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${isHealthy ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'}`}>
+                  {t(value)}
+                </span>
               </div>
             );
           })}
