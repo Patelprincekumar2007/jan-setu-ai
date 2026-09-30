@@ -117,14 +117,20 @@ Deterministic Priority Engine   Deterministic Demand Hotspots
 - Explicit CORS origin allowlist.
 - Global sanitized exception handling preventing stack trace leakage.
 
+### 4.10 Production Deployment Preparation (Stage 3K)
+- **Container Architecture:** Linux-compatible `python:3.11-slim` backend container and multi-stage `node:20-alpine` + `nginx:alpine` frontend container.
+- **Cloud Run Readiness:** Configurable `PORT` binding (defaults to 8080), non-root execution, dual lightweight `/health` & `/api/v1/health` probes.
+- **SPA Fallback Routing:** Nginx configured with `try_files $uri $uri/ /index.html;` ensuring direct navigation to all routes (`/`, `/submit`, `/track`, `/dashboard`, `/datasets`, `/privacy-policy`, `/terms`).
+- **Complete Deployment Guide:** See [docs/DEPLOYMENT.md](file:///c:/Users/jnpat/OneDrive/Desktop/GDG%20hackathon/docs/DEPLOYMENT.md).
+
 ---
 
 ## 5. Verification & Testing
 
-The repository contains 130 comprehensive tests with 100% pass rate:
+The repository contains 138 comprehensive tests with 100% pass rate:
 ```bash
 python -m pytest -q
-# 130 passed in 10.5s
+# 138 passed
 ```
 
 Frontend verification:
@@ -159,8 +165,14 @@ npm install
 npm run dev
 ```
 
+### Docker Integration (Local Testing)
+```bash
+docker compose up --build
+```
+
 ---
 
 ## 7. License & Compliance
 - **License:** MIT License (or hackathon specified open license).
 - **Public Data:** Open Government Data (OGD) Platform India under Government Open Data License (GODL).
+

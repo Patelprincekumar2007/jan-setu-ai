@@ -27,6 +27,8 @@
 | Phase 2 Step 3H | Request Analytics | Category, Geographic, Timeline, Severity, Evidence Coverage APIs | COMPLETE & LOCKED |
 | Phase 2 Step 3I | Multilingual + Voice | English, Hindi, Gujarati Intake, Google Speech Integration & Safe Fallback | COMPLETE & LOCKED |
 | Phase 2 Step 3J | Security & Production Hardening | Security Headers, Rate Limiting, Sanitized Errors, Explicit CORS | COMPLETE & LOCKED |
+| Phase 3K | Deployment Preparation | Cloud Run Dockerfiles, Nginx SPA, Config Templates, Compose, Cloud Build | COMPLETE & LOCKED |
+| Phase 3N | Cloud Run Production Deployment | Live GCP Cloud Run Deployment & Domain Mapping | SCHEDULED |
 
 ---
 
@@ -66,11 +68,18 @@
   - SQL injection and path traversal resistance.
   - Zero secrets in repository; `.env.example` audited.
 
+### Stage 3K: Production Deployment Preparation
+- **Objective:** Prepare full containerization, production environment configuration, and Cloud Run readiness for later deployment.
+- **Backend Container:** Linux-compatible `python:3.11-slim` Dockerfile with non-root execution, dynamic `$PORT` binding, and health check probe.
+- **Frontend Container:** Multi-stage Dockerfile (`node:20-alpine` build + `nginx:alpine` runtime) with SPA route fallback and security headers.
+- **Integration & Tooling:** Local `docker-compose.yml`, Google Cloud Build `cloudbuild.yaml`, documented `.env.example` templates.
+- **Documentation:** Complete `docs/DEPLOYMENT.md` deployment specification covering local execution, container builds, GCP API requirements, and prototype SQLite/FAISS scope.
+
 ---
 
 ## Verification and Test Quality Matrix
 
-The platform includes a 100% deterministic Pytest test suite covering all modules (130/130 passing tests):
+The platform includes a 100% deterministic Pytest test suite covering all modules (138/138 passing tests):
 
 | Test Module | Scope | Status |
 |---|---|---|
@@ -90,3 +99,5 @@ The platform includes a 100% deterministic Pytest test suite covering all module
 | `tests/test_analytics.py` | Stage 3H category, geo, timeline, evidence analytics | PASSED |
 | `tests/test_multilingual.py` | Stage 3I multilingual intake & voice transcription | PASSED |
 | `tests/test_security.py` | Stage 3J security middleware, rate limit, CORS, sanitization | PASSED |
+| `tests/test_deployment_readiness.py` | Stage 3K deployment configs, Dockerfiles, health probes, FAISS & data paths | PASSED |
+

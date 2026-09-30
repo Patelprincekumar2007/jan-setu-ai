@@ -84,6 +84,13 @@ To guarantee strict compliance with institutional data governance and prevent ad
 
 ## 10. Verification and Quality Assurance Architecture
 Every subsystem is covered by deterministic test suites in `tests/`:
-- **130 Passing Automated Tests:** Covering public data, vector search, hybrid retrieval, RAG, priority-v1, hotspot-v1, analytics, multilingual, voice, and security middleware.
+- **138 Passing Automated Tests:** Covering public data, vector search, hybrid retrieval, RAG, priority-v1, hotspot-v1, analytics, multilingual, voice, security middleware, and deployment readiness.
 - **Unit Testing:** Deterministic mock fixtures for Gemini APIs, ensuring test execution without live API rate limits or network dependencies.
 - **Anti-Injection Tests:** Adversarial test inputs designed to attempt instruction overriding and verify guardrail enforcement.
+
+## 11. Deployment Architecture and Cloud Run Readiness (Stage 3K)
+- **Backend Container:** Stateless Linux container (`python:3.11-slim`) listening on `$PORT` (default 8080) with dynamic non-root user execution (`appuser:appuser`).
+- **Frontend Container:** Multi-stage container (`node:20-alpine` build + `nginx:alpine` runtime) with SPA routing fallback (`try_files $uri $uri/ /index.html;`) and security headers.
+- **Health Probes:** Dual lightweight endpoints (`GET /health` and `GET /api/v1/health`) executing instantly in memory.
+- **Prototype Persistence Scope:** SQLite storage (`nagriklens.db`) is local/ephemeral for single-instance prototype execution.
+
