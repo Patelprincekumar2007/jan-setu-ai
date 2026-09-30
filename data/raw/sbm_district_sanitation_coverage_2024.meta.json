@@ -1,0 +1,13 @@
+{
+  "dataset_id": "ds-sbm-sanitation-coverage-2024",
+  "title": "District-wise ODF Plus Verified Village Sanitation Coverage",
+  "description": "District-level percentage of villages verified as Open Defecation Free (ODF) Plus with functional solid and liquid waste management under Swachh Bharat Mission (Gramin) Phase II.",
+  "source_name": "Open Government Data Platform India / Swachh Bharat Mission (Gramin)",
+  "source_url": "https://data.gov.in/resource/district-wise-odf-plus-villages-under-swachh-bharat-mission-gramin",
+  "publisher": "Department of Drinking Water and Sanitation, Ministry of Jal Shakti",
+  "data_type": "tabular",
+  "geographic_scope": "National",
+  "update_frequency": "Annual",
+  "last_updated": "2024-Q2",
+  "license": "Government Open Data License - India (GODL)"
+}

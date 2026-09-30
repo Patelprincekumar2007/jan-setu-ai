@@ -1,0 +1,26 @@
+state,district,locality,category,metric_name,odf_plus_village_coverage_pct,unit,year,period,source_reference,notes
+Bihar,Gaya,,Sanitation,ODF Plus Verified Village Coverage (%),68.2,%,2024,2024-Q2,OGD-SBMG-2024-BR-01,Solid and liquid waste management progress
+Bihar,Patna,,Sanitation,ODF Plus Verified Village Coverage (%),84.5,%,2024,2024-Q2,OGD-SBMG-2024-BR-02,Peri-urban sanitation saturation
+Gujarat,Ahmedabad,,Sanitation,ODF Plus Verified Village Coverage (%),96.8,%,2024,2024-Q2,OGD-SBMG-2024-GJ-01,High model village saturation
+Gujarat,Rajkot,,Sanitation,ODF Plus Verified Village Coverage (%),92.1,%,2024,2024-Q2,OGD-SBMG-2024-GJ-02,Saurashtra rural sanitation baseline
+Karnataka,Bangalore Rural,,Sanitation,ODF Plus Verified Village Coverage (%),89.4,%,2024,2024-Q2,OGD-SBMG-2024-KA-01,Gram panchayat greywater management
+Karnataka,Belagavi,,Sanitation,ODF Plus Verified Village Coverage (%),78.3,%,2024,2024-Q2,OGD-SBMG-2024-KA-02,North Karnataka sanitation audit
+Karnataka,Kalaburagi,,Sanitation,ODF Plus Verified Village Coverage (%),65.2,%,2024,2024-Q2,OGD-SBMG-2024-KA-03,Kalyana Karnataka sanitation infrastructure
+Maharashtra,Dharashiv,,Sanitation,ODF Plus Verified Village Coverage (%),58.7,%,2024,2024-Q2,OGD-SBMG-2024-MH-01,Marathwada dry zone village sanitation and waste management
+Maharashtra,Pune,,Sanitation,ODF Plus Verified Village Coverage (%),88.9,%,2024,2024-Q2,OGD-SBMG-2024-MH-02,Western Maharashtra model sanitation
+Maharashtra,Nashik,,Sanitation,ODF Plus Verified Village Coverage (%),76.1,%,2024,2024-Q2,OGD-SBMG-2024-MH-03,North Maharashtra rural sanitation
+Maharashtra,Nagpur,,Sanitation,ODF Plus Verified Village Coverage (%),85.4,%,2024,2024-Q2,OGD-SBMG-2024-MH-04,Vidarbha regional sanitation coverage
+Maharashtra,Nanded,,Sanitation,ODF Plus Verified Village Coverage (%),64.3,%,2024,2024-Q2,OGD-SBMG-2024-MH-05,Marathwada eastern district sanitation
+Madhya Pradesh,Bhopal,,Sanitation,ODF Plus Verified Village Coverage (%),79.0,%,2024,2024-Q2,OGD-SBMG-2024-MP-01,Central MP sanitation baseline
+Madhya Pradesh,Indore,,Sanitation,ODF Plus Verified Village Coverage (%),91.3,%,2024,2024-Q2,OGD-SBMG-2024-MP-02,Exemplary model sanitation district
+Odisha,Cuttack,,Sanitation,ODF Plus Verified Village Coverage (%),72.6,%,2024,2024-Q2,OGD-SBMG-2024-OD-01,Coastal Odisha rural sanitation
+Odisha,Khordha,,Sanitation,ODF Plus Verified Village Coverage (%),82.1,%,2024,2024-Q2,OGD-SBMG-2024-OD-02,Capital district sanitation baseline
+Rajasthan,Jaipur,,Sanitation,ODF Plus Verified Village Coverage (%),61.4,%,2024,2024-Q2,OGD-SBMG-2024-RJ-01,Eastern Rajasthan community sanitation
+Rajasthan,Jodhpur,,Sanitation,ODF Plus Verified Village Coverage (%),52.8,%,2024,2024-Q2,OGD-SBMG-2024-RJ-02,Arid zone village waste management
+Tamil Nadu,Chennai,,Sanitation,ODF Plus Verified Village Coverage (%),97.5,%,2024,2024-Q2,OGD-SBMG-2024-TN-01,Peri-urban sanitation infrastructure
+Tamil Nadu,Coimbatore,,Sanitation,ODF Plus Verified Village Coverage (%),94.0,%,2024,2024-Q2,OGD-SBMG-2024-TN-02,Western TN community sanitation baseline
+Uttar Pradesh,Varanasi,,Sanitation,ODF Plus Verified Village Coverage (%),77.2,%,2024,2024-Q2,OGD-SBMG-2024-UP-01,Purvanchal village sanitation
+Uttar Pradesh,Lucknow,,Sanitation,ODF Plus Verified Village Coverage (%),81.6,%,2024,2024-Q2,OGD-SBMG-2024-UP-02,Central UP sanitation audit
+Uttar Pradesh,Gorakhpur,,Sanitation,ODF Plus Verified Village Coverage (%),73.9,%,2024,2024-Q2,OGD-SBMG-2024-UP-03,Eastern UP rural sanitation
+West Bengal,Kolkata,,Sanitation,ODF Plus Verified Village Coverage (%),90.5,%,2024,2024-Q2,OGD-SBMG-2024-WB-01,Gangetic delta village sanitation
+West Bengal,Darjeeling,,Sanitation,ODF Plus Verified Village Coverage (%),63.1,%,2024,2024-Q2,OGD-SBMG-2024-WB-02,Hill terrain rural sanitation baseline

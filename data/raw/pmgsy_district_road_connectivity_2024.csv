@@ -1,0 +1,26 @@
+state,district,locality,category,metric_name,habitations_connected_pct,unit,year,period,source_reference,notes
+Bihar,Gaya,,Roads,Rural Habitations Connected by All-Weather Roads (%),73.5,%,2024,2024-Q3,OGD-PMGSY-2024-BR-01,PMGSY-III connectivity progress
+Bihar,Patna,,Roads,Rural Habitations Connected by All-Weather Roads (%),89.2,%,2024,2024-Q3,OGD-PMGSY-2024-BR-02,High connectivity plain district
+Gujarat,Ahmedabad,,Roads,Rural Habitations Connected by All-Weather Roads (%),98.4,%,2024,2024-Q3,OGD-PMGSY-2024-GJ-01,Near full habitation connectivity
+Gujarat,Rajkot,,Roads,Rural Habitations Connected by All-Weather Roads (%),95.1,%,2024,2024-Q3,OGD-PMGSY-2024-GJ-02,Saurashtra rural road network
+Karnataka,Bangalore Rural,,Roads,Rural Habitations Connected by All-Weather Roads (%),94.7,%,2024,2024-Q3,OGD-PMGSY-2024-KA-01,High density peri-urban rural roads
+Karnataka,Belagavi,,Roads,Rural Habitations Connected by All-Weather Roads (%),84.0,%,2024,2024-Q3,OGD-PMGSY-2024-KA-02,North Karnataka all-weather roads
+Karnataka,Kalaburagi,,Roads,Rural Habitations Connected by All-Weather Roads (%),71.2,%,2024,2024-Q3,OGD-PMGSY-2024-KA-03,Kalyana Karnataka connectivity baseline
+Maharashtra,Dharashiv,,Roads,Rural Habitations Connected by All-Weather Roads (%),66.8,%,2024,2024-Q3,OGD-PMGSY-2024-MH-01,Marathwada dry zone rural road connectivity
+Maharashtra,Pune,,Roads,Rural Habitations Connected by All-Weather Roads (%),91.5,%,2024,2024-Q3,OGD-PMGSY-2024-MH-02,Western Maharashtra road network
+Maharashtra,Nashik,,Roads,Rural Habitations Connected by All-Weather Roads (%),79.4,%,2024,2024-Q3,OGD-PMGSY-2024-MH-03,Tribal area road connectivity audit
+Maharashtra,Nagpur,,Roads,Rural Habitations Connected by All-Weather Roads (%),90.1,%,2024,2024-Q3,OGD-PMGSY-2024-MH-04,Vidarbha hub all-weather roads
+Maharashtra,Nanded,,Roads,Rural Habitations Connected by All-Weather Roads (%),69.3,%,2024,2024-Q3,OGD-PMGSY-2024-MH-05,Marathwada rural road baseline
+Madhya Pradesh,Bhopal,,Roads,Rural Habitations Connected by All-Weather Roads (%),83.2,%,2024,2024-Q3,OGD-PMGSY-2024-MP-01,Central MP habitation connectivity
+Madhya Pradesh,Indore,,Roads,Rural Habitations Connected by All-Weather Roads (%),88.7,%,2024,2024-Q3,OGD-PMGSY-2024-MP-02,Malwa region road connectivity
+Odisha,Cuttack,,Roads,Rural Habitations Connected by All-Weather Roads (%),76.8,%,2024,2024-Q3,OGD-PMGSY-2024-OD-01,Coastal Odisha rural road audit
+Odisha,Khordha,,Roads,Rural Habitations Connected by All-Weather Roads (%),85.3,%,2024,2024-Q3,OGD-PMGSY-2024-OD-02,Capital district connectivity baseline
+Rajasthan,Jaipur,,Roads,Rural Habitations Connected by All-Weather Roads (%),72.0,%,2024,2024-Q3,OGD-PMGSY-2024-RJ-01,Eastern Rajasthan road network
+Rajasthan,Jodhpur,,Roads,Rural Habitations Connected by All-Weather Roads (%),63.5,%,2024,2024-Q3,OGD-PMGSY-2024-RJ-02,Desert terrain habitation connectivity
+Tamil Nadu,Chennai,,Roads,Rural Habitations Connected by All-Weather Roads (%),99.0,%,2024,2024-Q3,OGD-PMGSY-2024-TN-01,Metropolitan periphery road network
+Tamil Nadu,Coimbatore,,Roads,Rural Habitations Connected by All-Weather Roads (%),96.2,%,2024,2024-Q3,OGD-PMGSY-2024-TN-02,Western TN road connectivity
+Uttar Pradesh,Varanasi,,Roads,Rural Habitations Connected by All-Weather Roads (%),82.4,%,2024,2024-Q3,OGD-PMGSY-2024-UP-01,Purvanchal habitation road baseline
+Uttar Pradesh,Lucknow,,Roads,Rural Habitations Connected by All-Weather Roads (%),86.9,%,2024,2024-Q3,OGD-PMGSY-2024-UP-02,Central UP rural connectivity
+Uttar Pradesh,Gorakhpur,,Roads,Rural Habitations Connected by All-Weather Roads (%),79.8,%,2024,2024-Q3,OGD-PMGSY-2024-UP-03,Eastern UP rural road network
+West Bengal,Kolkata,,Roads,Rural Habitations Connected by All-Weather Roads (%),93.6,%,2024,2024-Q3,OGD-PMGSY-2024-WB-01,Gangetic delta rural road network
+West Bengal,Darjeeling,,Roads,Rural Habitations Connected by All-Weather Roads (%),60.2,%,2024,2024-Q3,OGD-PMGSY-2024-WB-02,Himalayan hill terrain road connectivity

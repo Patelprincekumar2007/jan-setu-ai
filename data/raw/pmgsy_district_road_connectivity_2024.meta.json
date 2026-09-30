@@ -1,0 +1,13 @@
+{
+  "dataset_id": "ds-pmgsy-road-connectivity-2024",
+  "title": "District-wise Rural Habitation Road Connectivity Coverage under PMGSY",
+  "description": "Percentage of eligible rural habitations connected by all-weather roads under Pradhan Mantri Gram Sadak Yojana (PMGSY) across Indian districts.",
+  "source_name": "Open Government Data Platform India / Ministry of Rural Development",
+  "source_url": "https://data.gov.in/resource/district-wise-habitation-connectivity-status-under-pmgsy",
+  "publisher": "National Rural Infrastructure Development Agency (NRIDA), Ministry of Rural Development",
+  "data_type": "tabular",
+  "geographic_scope": "National",
+  "update_frequency": "Annual",
+  "last_updated": "2024-Q3",
+  "license": "Government Open Data License - India (GODL)"
+}

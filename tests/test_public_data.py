@@ -12,8 +12,10 @@ from backend.public_data.schemas import DatasetCreate, PublicDataRecordCreate
 from backend.public_data.loaders import JJMWaterCoverageLoader
 from backend.public_data.service import PublicDataService
 from backend.public_data import repository as pub_repo
+from backend.public_data.models import Dataset
 
 init_db()
+
 client = TestClient(app)
 
 
@@ -158,7 +160,10 @@ def test_dataset_repository_crud():
         assert rec is not None
         assert rec.title == "CRUD Test Dataset"
     finally:
+        db.query(Dataset).filter(Dataset.dataset_id == "ds-crud-test").delete()
+        db.commit()
         db.close()
+
 
 
 def test_jjm_loader_and_provenance_preservation():
@@ -175,34 +180,120 @@ def test_jjm_loader_and_provenance_preservation():
     assert d.metric_value is not None
 
 
+def test_all_four_dataset_loaders():
+    from backend.public_data.loaders import (
+        JJMWaterCoverageLoader,
+        NHMHealthInfrastructureLoader,
+        SBMSanitationCoverageLoader,
+        PMGSYRoadConnectivityLoader,
+    )
+    
+    # 1. Water
+    ds_w, recs_w = JJMWaterCoverageLoader().load()
+    assert ds_w.dataset_id == "ds-jjm-water-coverage-2024"
+    assert ds_w.category == "Water"
+    assert len(recs_w) == 25
+    
+    # 2. Healthcare
+    ds_h, recs_h = NHMHealthInfrastructureLoader().load()
+    assert ds_h.dataset_id == "ds-nhm-health-facilities-2024"
+    assert ds_h.category == "Healthcare"
+    assert len(recs_h) == 25
+    
+    # 3. Sanitation
+    ds_s, recs_s = SBMSanitationCoverageLoader().load()
+    assert ds_s.dataset_id == "ds-sbm-sanitation-coverage-2024"
+    assert ds_s.category == "Sanitation"
+    assert len(recs_s) == 25
+    
+    # 4. Roads
+    ds_r, recs_r = PMGSYRoadConnectivityLoader().load()
+    assert ds_r.dataset_id == "ds-pmgsy-road-connectivity-2024"
+    assert ds_r.category == "Roads"
+    assert len(recs_r) == 25
+
+
+def test_dataset_registry_manifest():
+    from backend.public_data.registry import DatasetRegistry
+    datasets = DatasetRegistry.get_registered_datasets()
+    assert len(datasets) >= 4
+    cat_set = {d.category for d in datasets}
+    assert {"Water", "Healthcare", "Sanitation", "Roads"}.issubset(cat_set)
+
+
+
+def test_ingestion_idempotency():
+    db = SessionLocal()
+    try:
+        from backend.public_data.loaders import JJMWaterCoverageLoader
+        loader = JJMWaterCoverageLoader()
+        
+        # Ingest once
+        _, count1 = PublicDataService.ingest_dataset(db, loader)
+        # Ingest again
+        _, count2 = PublicDataService.ingest_dataset(db, loader)
+        
+        assert count1 == 25
+        assert count2 == 25
+        
+        # Verify no duplicate records in DB
+        recs, total = pub_repo.list_public_records(db, dataset_id="ds-jjm-water-coverage-2024", limit=100)
+        assert total == 25
+    finally:
+        db.close()
+
+
 def test_api_list_datasets():
-    res = client.get("/api/public-data/datasets")
+    res = client.get("/api/datasets")
     assert res.status_code == 200
     data = res.json()
     assert "total" in data
     assert "datasets" in data
-    assert data["total"] >= 1
+    assert data["total"] >= 4
 
 
 def test_api_get_dataset_by_id():
-    res = client.get("/api/public-data/datasets/ds-jjm-water-coverage-2024")
-    assert res.status_code == 200
-    data = res.json()
-    assert data["dataset_id"] == "ds-jjm-water-coverage-2024"
-    assert data["source_name"] is not None
+    for ds_id in [
+        "ds-jjm-water-coverage-2024",
+        "ds-nhm-health-facilities-2024",
+        "ds-sbm-sanitation-coverage-2024",
+        "ds-pmgsy-road-connectivity-2024",
+    ]:
+        res = client.get(f"/api/datasets/{ds_id}")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["dataset_id"] == ds_id
+        assert data["source_name"] is not None
 
 
 def test_api_get_dataset_404():
-    res = client.get("/api/public-data/datasets/ds-nonexistent-dataset")
+    res = client.get("/api/datasets/ds-nonexistent-dataset")
     assert res.status_code == 404
 
 
 def test_api_list_dataset_records_and_filters():
     res = client.get(
-        "/api/public-data/datasets/ds-jjm-water-coverage-2024/records?state=Maharashtra&district=Dharashiv"
+        "/api/datasets/ds-jjm-water-coverage-2024/records?state=Maharashtra&district=Dharashiv"
     )
     assert res.status_code == 200
     data = res.json()
     assert data["total"] == 1
     assert data["records"][0]["district"] == "Dharashiv"
     assert data["records"][0]["state"] == "Maharashtra"
+
+
+def test_api_dataset_quality_report():
+    for ds_id in [
+        "ds-jjm-water-coverage-2024",
+        "ds-nhm-health-facilities-2024",
+        "ds-sbm-sanitation-coverage-2024",
+        "ds-pmgsy-road-connectivity-2024",
+    ]:
+        res = client.get(f"/api/datasets/{ds_id}/quality")
+        assert res.status_code == 200
+        data = res.json()
+        assert data["dataset_id"] == ds_id
+        assert data["valid_row_count"] == 25
+        assert data["duplicate_count"] == 0
+        assert data["knowledge_evidence_count"] == 25
+

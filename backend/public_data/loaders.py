@@ -1,8 +1,7 @@
 import csv
 import json
-import os
 from abc import ABC, abstractmethod
-from typing import List, Tuple, Optional
+from typing import List, Tuple, Optional, Dict, Any
 from pathlib import Path
 from backend.public_data.schemas import DatasetCreate, PublicDataRecordCreate
 from backend.public_data.normalizer import (
@@ -10,6 +9,7 @@ from backend.public_data.normalizer import (
     normalize_numeric_metric,
     normalize_category,
     normalize_integer,
+    normalize_unit,
 )
 
 class BaseDatasetLoader(ABC):
@@ -19,21 +19,20 @@ class BaseDatasetLoader(ABC):
     def load(self) -> Tuple[DatasetCreate, List[PublicDataRecordCreate]]:
         pass
 
-class JJMWaterCoverageLoader(BaseDatasetLoader):
+class GenericCSVDatasetLoader(BaseDatasetLoader):
     """
-    Deterministic loader for Jal Jeevan Mission District-level Water Coverage dataset.
-    Raw source: data/raw/jjm_district_water_coverage_2024.csv
-    Metadata source: data/raw/jjm_district_water_coverage_2024.meta.json
+    Standard deterministic loader for tabular civic datasets.
     """
 
-    def __init__(self, raw_data_dir: Optional[str] = None):
-        if raw_data_dir:
-            self.base_dir = Path(raw_data_dir)
-        else:
-            self.base_dir = Path(__file__).resolve().parent.parent.parent / "data" / "raw"
-
-        self.csv_path = self.base_dir / "jjm_district_water_coverage_2024.csv"
-        self.meta_path = self.base_dir / "jjm_district_water_coverage_2024.meta.json"
+    def __init__(
+        self,
+        csv_path: Path,
+        meta_path: Path,
+        default_category: str = "Other",
+    ):
+        self.csv_path = csv_path
+        self.meta_path = meta_path
+        self.default_category = default_category
 
     def load(self) -> Tuple[DatasetCreate, List[PublicDataRecordCreate]]:
         if not self.meta_path.exists():
@@ -53,10 +52,16 @@ class JJMWaterCoverageLoader(BaseDatasetLoader):
             publisher=meta.get("publisher"),
             data_type=meta.get("data_type", "tabular"),
             geographic_scope=meta.get("geographic_scope", "National"),
-            update_frequency=meta.get("update_frequency", "Annual"),
+            geographic_level=meta.get("geographic_level", "District"),
+            category=meta.get("category", self.default_category),
+            year=meta.get("year", 2024),
+            period=meta.get("period"),
             last_updated=meta.get("last_updated"),
-            license=meta.get("license", "Open Government Data License - India"),
+            license=meta.get("license", "Government Open Data License - India (GODL)"),
             ingestion_status="NOT_INGESTED",
+            retrieval_method=meta.get("retrieval_method", "official_download"),
+            source_format=meta.get("source_format", "CSV"),
+            notes=meta.get("notes"),
         )
 
         records: List[PublicDataRecordCreate] = []
@@ -68,11 +73,31 @@ class JJMWaterCoverageLoader(BaseDatasetLoader):
                 if not state_norm or not district_norm:
                     continue
 
-                val_norm = normalize_numeric_metric(
-                    row.get("tap_water_coverage_pct") or row.get("coverage_pct") or row.get("metric_value")
-                )
-                year_norm = normalize_integer(row.get("year") or row.get("Year") or 2024)
-                src_ref = (row.get("source_reference") or row.get("source_id") or f"OGD-JJM-2024-{state_norm[:2].upper()}-{i:02d}").strip()
+                # Locate metric column
+                metric_val = None
+                for col in [
+                    "tap_water_coverage_pct",
+                    "coverage_pct",
+                    "functional_phc_readiness_pct",
+                    "odf_plus_village_coverage_pct",
+                    "habitations_connected_pct",
+                    "metric_value",
+                    "value",
+                ]:
+                    if col in row and row[col] is not None:
+                        metric_val = row[col]
+                        break
+
+                val_norm = normalize_numeric_metric(metric_val)
+                year_norm = normalize_integer(row.get("year") or row.get("Year") or dataset.year or 2024)
+                cat_norm = normalize_category(row.get("category") or dataset.category or self.default_category)
+                unit_norm = normalize_unit(row.get("unit") or "%")
+
+                src_ref = (
+                    row.get("source_reference")
+                    or row.get("source_id")
+                    or f"OGD-{dataset.dataset_id[:8].upper()}-{state_norm[:2].upper()}-{i:02d}"
+                ).strip()
 
                 record = PublicDataRecordCreate(
                     record_id=f"{dataset.dataset_id}-REC-{i:04d}",
@@ -80,16 +105,74 @@ class JJMWaterCoverageLoader(BaseDatasetLoader):
                     state=state_norm,
                     district=district_norm,
                     locality=normalize_geographic_name(row.get("locality")),
-                    category="Water",
-                    metric_name=row.get("metric_name", "Rural Household Tap Water Coverage (%)").strip(),
+                    category=cat_norm,  # type: ignore
+                    metric_name=row.get("metric_name", f"{dataset.title} Metric").strip(),
                     metric_value=val_norm,
-                    unit=row.get("unit", "%").strip(),
+                    unit=unit_norm,
                     year=year_norm,
-                    period=row.get("period", "2024-Q3").strip() if row.get("period") else "2024-Q3",
-                    geographic_level="District",
+                    period=row.get("period", dataset.period or "2024").strip() if row.get("period") else dataset.period,
+                    geographic_level=row.get("geographic_level", dataset.geographic_level or "District").strip(),
                     source_reference=src_ref,
                     notes=row.get("notes", "").strip() or None,
                 )
                 records.append(record)
 
         return dataset, records
+
+class JJMWaterCoverageLoader(GenericCSVDatasetLoader):
+    def __init__(self, raw_data_dir: Optional[str] = None):
+        base = Path(raw_data_dir) if raw_data_dir else Path(__file__).resolve().parent.parent.parent / "data" / "raw"
+        super().__init__(
+            csv_path=base / "jjm_district_water_coverage_2024.csv",
+            meta_path=base / "jjm_district_water_coverage_2024.meta.json",
+            default_category="Water",
+        )
+
+class NHMHealthInfrastructureLoader(GenericCSVDatasetLoader):
+    def __init__(self, raw_data_dir: Optional[str] = None):
+        base = Path(raw_data_dir) if raw_data_dir else Path(__file__).resolve().parent.parent.parent / "data" / "raw"
+        super().__init__(
+            csv_path=base / "nhm_district_health_infrastructure_2024.csv",
+            meta_path=base / "nhm_district_health_infrastructure_2024.meta.json",
+            default_category="Healthcare",
+        )
+
+class SBMSanitationCoverageLoader(GenericCSVDatasetLoader):
+    def __init__(self, raw_data_dir: Optional[str] = None):
+        base = Path(raw_data_dir) if raw_data_dir else Path(__file__).resolve().parent.parent.parent / "data" / "raw"
+        super().__init__(
+            csv_path=base / "sbm_district_sanitation_coverage_2024.csv",
+            meta_path=base / "sbm_district_sanitation_coverage_2024.meta.json",
+            default_category="Sanitation",
+        )
+
+class PMGSYRoadConnectivityLoader(GenericCSVDatasetLoader):
+    def __init__(self, raw_data_dir: Optional[str] = None):
+        base = Path(raw_data_dir) if raw_data_dir else Path(__file__).resolve().parent.parent.parent / "data" / "raw"
+        super().__init__(
+            csv_path=base / "pmgsy_district_road_connectivity_2024.csv",
+            meta_path=base / "pmgsy_district_road_connectivity_2024.meta.json",
+            default_category="Roads",
+        )
+
+def get_loader_for_dataset(dataset_id: str, raw_data_dir: Optional[str] = None) -> BaseDatasetLoader:
+    """Factory returning the appropriate loader for a registered dataset ID."""
+    loaders: Dict[str, Any] = {
+        "ds-jjm-water-coverage-2024": JJMWaterCoverageLoader,
+        "ds-nhm-health-facilities-2024": NHMHealthInfrastructureLoader,
+        "ds-sbm-sanitation-coverage-2024": SBMSanitationCoverageLoader,
+        "ds-pmgsy-road-connectivity-2024": PMGSYRoadConnectivityLoader,
+    }
+
+    loader_cls = loaders.get(dataset_id)
+    if loader_cls:
+        return loader_cls(raw_data_dir=raw_data_dir)
+
+    # Generic fallback
+    base = Path(raw_data_dir) if raw_data_dir else Path(__file__).resolve().parent.parent.parent / "data" / "raw"
+    csv_candidates = list(base.glob(f"*{dataset_id.replace('ds-', '')}*.csv"))
+    meta_candidates = list(base.glob(f"*{dataset_id.replace('ds-', '')}*.meta.json"))
+    if csv_candidates and meta_candidates:
+        return GenericCSVDatasetLoader(csv_path=csv_candidates[0], meta_path=meta_candidates[0])
+
+    raise ValueError(f"No loader configured for dataset ID: {dataset_id}")

@@ -1,0 +1,13 @@
+{
+  "dataset_id": "ds-nhm-health-facilities-2024",
+  "title": "District-wise Functional Primary Health Infrastructure Availability",
+  "description": "Functional Primary Health Centres (PHC) and sub-centres infrastructure readiness and facility availability across Indian districts under Rural Health Statistics.",
+  "source_name": "Open Government Data Platform India / Ministry of Health and Family Welfare",
+  "source_url": "https://data.gov.in/resource/rural-health-statistics-district-wise-functioning-health-centres",
+  "publisher": "Ministry of Health and Family Welfare, Government of India",
+  "data_type": "tabular",
+  "geographic_scope": "National",
+  "update_frequency": "Annual",
+  "last_updated": "2024-Q1",
+  "license": "Government Open Data License - India (GODL)"
+}

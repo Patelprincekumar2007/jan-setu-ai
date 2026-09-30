@@ -1,8 +1,8 @@
-from typing import Optional, Literal, List
+from typing import Optional, Literal, List, Dict, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, field_validator
 
-IngestionStatusType = Literal["NOT_INGESTED", "INGESTED", "FAILED"]
+IngestionStatusType = Literal["NOT_INGESTED", "INGESTED", "FAILED", "VERIFIED", "VALIDATING", "DEPRECATED"]
 CategoryType = Literal["Water", "Roads", "Healthcare", "Sanitation", "Other"]
 
 class DatasetCreate(BaseModel):
@@ -14,10 +14,16 @@ class DatasetCreate(BaseModel):
     publisher: Optional[str] = None
     data_type: str = "tabular"
     geographic_scope: str = "National"
-    update_frequency: str = "Annual"
+    geographic_level: str = "District"
+    category: str = "Other"
+    year: Optional[int] = None
+    period: Optional[str] = None
     last_updated: Optional[str] = None
-    license: str = "Open Government Data License - India"
+    license: str = "Government Open Data License - India (GODL)"
     ingestion_status: IngestionStatusType = "NOT_INGESTED"
+    retrieval_method: Optional[str] = "official_download"
+    source_format: Optional[str] = "CSV"
+    notes: Optional[str] = None
 
     @field_validator("dataset_id", "title", "source_name", "data_type", "geographic_scope", "license", mode="before")
     @classmethod
@@ -38,11 +44,17 @@ class DatasetResponse(BaseModel):
     publisher: Optional[str] = None
     data_type: str
     geographic_scope: str
-    update_frequency: str
+    geographic_level: str
+    category: str
+    year: Optional[int] = None
+    period: Optional[str] = None
     last_updated: Optional[str] = None
     license: str
     ingestion_status: str
     record_count: int
+    retrieval_method: Optional[str] = None
+    source_format: Optional[str] = None
+    notes: Optional[str] = None
     ingested_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
 
@@ -95,4 +107,38 @@ class PublicDataRecordResponse(BaseModel):
 
 class PublicRecordListResponse(BaseModel):
     total: int
+    page: int = 1
+    limit: int = 50
     records: List[PublicDataRecordResponse]
+
+class DatasetQualityReport(BaseModel):
+    dataset_id: str
+    title: str
+    category: str
+    status: str
+    raw_row_count: int
+    normalized_row_count: int
+    valid_row_count: int
+    invalid_row_count: int
+    duplicate_count: int
+    null_metric_count: int
+    geographic_coverage_states: int
+    geographic_coverage_districts: int
+    knowledge_evidence_count: int
+    quality_flags: List[Dict[str, Any]] = []
+    generated_at: datetime = Field(default_factory=datetime.utcnow)
+
+class DatasetIngestionRunResponse(BaseModel):
+    id: int
+    dataset_id: str
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    status: str
+    raw_records: int
+    normalized_records: int
+    inserted_records: int
+    skipped_records: int
+    duplicate_records: int
+    error_count: int
+    warning_count: int
+    message: Optional[str] = None
